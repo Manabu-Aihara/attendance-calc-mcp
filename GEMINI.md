@@ -36,3 +36,8 @@
        * calc_work_classes3.py: Implements the core business logic for attendance calculation.
    * The main entry point of the application is main.py.
    * The project uses .flake8 for linting, so it's recommended to run flake8 before committing any changes.
+
+## Testing
+
+   * Tests can be run using `pytest`. From the project root, execute:
+     `PYTHONPATH=. pytest`
