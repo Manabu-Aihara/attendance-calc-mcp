@@ -25,8 +25,9 @@ def parse_csv(file_path, header_mapping=None):
         "年休(全日)": "annual_leave_full",
         "年休(半日)": "annual_leave_half",
         "時間外": "overtime_hours",
-        "時間休": "time_off_hours",
-        "中抜け": "break_time",
+        # "時間休": "time_off_hours",
+        # "中抜け": "break_time",
+        "時間休計": "time_off_total",
     }
     # 引数で指定されたマッピングがあればそれを使用、なければデフォルトを使用
     current_header_mapping = (

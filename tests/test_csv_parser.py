@@ -7,7 +7,7 @@ class TestCsvParser(unittest.TestCase):
     def setUp(self):
         # Create a dummy CSV file for testing
         self.test_csv_path = "test_data.csv"
-        self.test_csv_content = """社員ID,勤務形態,実働時間計,リアル実働時間,年休(全日),年休(半日),時間外,時間休,中抜け
+        self.test_csv_content = """社員ID,勤務形態,実働時間計,リアル実働時間,年休(全日),年休(半日),時間外,時間休計
 1001,通常,8.0,8.0,0,0,1.0,0,0
 1002,時短,6.0,6.0,0,0,0,0,0
 1001,通常,7.5,7.5,0.5,0,0,0,0
@@ -17,14 +17,14 @@ class TestCsvParser(unittest.TestCase):
 
         self.test_csv_path_with_missing_header = "test_data_missing_header.csv"
         # リアル実働時間 is missing
-        self.test_csv_content_with_missing_header = """社員ID,勤務形態,実働時間計,年休(全日),年休(半日),時間外,時間休,中抜け
+        self.test_csv_content_with_missing_header = """社員ID,勤務形態,実働時間計,年休(全日),年休(半日),時間外,時間休計
 1001,通常,8.0,0,0,1.0,0,0
 """
         with open(self.test_csv_path_with_missing_header, "w", encoding="utf-8") as f:
             f.write(self.test_csv_content_with_missing_header)
 
         self.test_csv_path_empty_lines = "test_data_empty_lines.csv"
-        self.test_csv_content_empty_lines = """社員ID,勤務形態,実働時間計,リアル実働時間,年休(全日),年休(半日),時間外,時間休,中抜け
+        self.test_csv_content_empty_lines = """社員ID,勤務形態,実働時間計,リアル実働時間,年休(全日),年休(半日),時間外,時間休計
 1001,通常,8.0,8.0,0,0,1.0,0,0
 
 1002,時短,6.0,6.0,0,0,0,0,0

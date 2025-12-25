@@ -19,10 +19,10 @@ class CSVFileSchema(BaseModel):
 
 class NewCalcDataSchema(BaseModel):
     staff_id: int
-    contract_work_time: float
-    contract_holiday_time: float
-    start_time: str
-    end_time: str
-    notifications: list[str]
-    overtime: str
-    holiday: str
+    contract_work_time: float = Field(description="契約勤務時間 (時間単位)")
+    contract_holiday_time: float = Field(description="契約休日時間 (時間単位)")
+    start_time: str = Field(description="勤務開始時間 (HH:MM形式)")
+    end_time: str = Field(description="勤務終了時間 (HH:MM形式)")
+    notifications: list[str] = Field(description="申請番号リスト")
+    overtime: str = Field(description="時間外の有無")
+    holiday_work: str = Field(description="休日出勤")
