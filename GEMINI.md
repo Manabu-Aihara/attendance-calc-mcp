@@ -33,7 +33,7 @@
        * models.py: Defines the database schema.
        * database_base.py: Handles the database connection.
        * attendance_contract_query.py: Contains queries for fetching data.
-       * calc_work_classes3.py: Implements the core business logic for attendance calculation.
+       * calc_work_classes4.py: Implements the core business logic for attendance calculation.
    * The main entry point of the application is main.py.
    * The project uses .flake8 for linting, so it's recommended to run flake8 before committing any changes.
 

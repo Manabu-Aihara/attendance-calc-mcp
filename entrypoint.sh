@@ -20,4 +20,4 @@ sleep 5
 
 # Gunicornを起動
 # ローカルの場合、8001ポートでアプリケーションを起動
-exec .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8001
+exec poetry run uvicorn main:app --host 0.0.0.0 --port 8001
