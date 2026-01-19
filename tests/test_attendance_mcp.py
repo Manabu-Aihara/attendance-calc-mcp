@@ -1,4 +1,4 @@
-from app.attendance_collect_logic import get_attendance_details_logic
+from app.logics.attendance_collect_logic import get_attendance_details_logic
 
 
 def test_get_attendance_details():

@@ -1,7 +1,7 @@
 # attendance_logic.py (新規作成)
 from datetime import datetime, timedelta
 import calendar
-from app.attendance_day_collect import collect_attendance_data
+from .attendance_day_collect import collect_attendance_data
 
 """
 指定された社員IDと対象月の勤怠詳細を取得します。
