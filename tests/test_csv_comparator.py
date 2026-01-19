@@ -132,7 +132,7 @@ def test_value_error_for_missing_columns(tmp_path: Path):
 def test_real_csv_file_check():
     parent_dir = Path(__file__).parent.parent
     print(f"Parent directory: {parent_dir}")
-    old_csv_file = parent_dir.joinpath("2025-12_old.csv")
-    new_csv_file = parent_dir.joinpath("2025-12_new.csv")
+    old_csv_file = parent_dir.joinpath("2025-12_old_02.csv")
+    new_csv_file = parent_dir.joinpath("2025-12_new_02.csv")
     result_json = compare_csv_files(str(old_csv_file), str(new_csv_file))
     print(f"Comparison result: {result_json}")
