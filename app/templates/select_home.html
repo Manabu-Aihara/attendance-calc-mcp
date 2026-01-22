@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select page</title>
+</head>
+</head>
+
+<body>
+    <h1>Select page</h1>
+    <p>ID {{ user_data["user_id"] }} さんが、利用中です</p>
+    <!-- <div>
+        <ul>
+            <li><a href="csv/csv_diff.html">CSV file comparison</a></li>
+            <li><a href="prompt/mcp_prompt.html">MCP prompt for attendance</a></li>
+        </ul>
+    </div> -->
+    <form method="get" action="csv-diff">
+        <input type="submit" name="{{ uuid }}" value="CSV file comparison">
+    </form>
+    <form method="get" action="">
+        <input type="submit" name="{{ uuid }}" value="MCP prompt for attendance">
+    </form>
+</body>
+
+</html>

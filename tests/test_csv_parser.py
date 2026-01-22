@@ -1,6 +1,7 @@
 import unittest
 import os
-from app.csv_parser import parse_csv
+from app.logics.csv_parser import parse_csv
+
 
 class TestCsvParser(unittest.TestCase):
 
@@ -51,7 +52,6 @@ class TestCsvParser(unittest.TestCase):
         self.assertEqual(records[0]["real_time"], "8.0")
         self.assertEqual(records[0]["overtime_hours"], "1.0")
 
-
     def test_parse_csv_custom_mapping(self):
         custom_mapping = {
             "社員ID": "employee_id",
@@ -67,7 +67,6 @@ class TestCsvParser(unittest.TestCase):
         self.assertEqual(records[0]["total_hours"], "8.0")
         self.assertEqual(records[0]["real_hours"], "8.0")
 
-
     def test_parse_csv_file_not_found(self):
         records, errors = parse_csv("non_existent_file.csv")
         self.assertEqual(len(records), 0)
@@ -80,14 +79,16 @@ class TestCsvParser(unittest.TestCase):
             "社員ID": "staff_id",
             "勤務形態": "work_type",
             "実働時間計": "actual_work_time",
-            "リアル実働時間": "real_time", # This one is missing in the file
+            "リアル実働時間": "real_time",  # This one is missing in the file
         }
-        records, errors = parse_csv(self.test_csv_path_with_missing_header, header_mapping=custom_mapping_for_missing)
+        records, errors = parse_csv(
+            self.test_csv_path_with_missing_header,
+            header_mapping=custom_mapping_for_missing,
+        )
         self.assertEqual(len(records), 0)
         # There should be one error per line for the missing header
         self.assertEqual(len(errors), 1)
         self.assertIn("Missing expected header 'リアル実働時間'", errors[0])
-
 
     def test_parse_csv_empty_lines(self):
         records, errors = parse_csv(self.test_csv_path_empty_lines)
@@ -96,6 +97,6 @@ class TestCsvParser(unittest.TestCase):
         self.assertEqual(records[0]["staff_id"], "1001")
         self.assertEqual(records[1]["staff_id"], "1002")
 
-if __name__ == '__main__':
-    unittest.main()
 
+if __name__ == "__main__":
+    unittest.main()
