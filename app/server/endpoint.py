@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, status, Form
+from fastapi import FastAPI, Request, status, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -11,7 +11,7 @@ from pathlib import Path
 import uuid
 from datetime import datetime
 
-from .csv_comparator import compare_csv_files
+from app.logics.csv_comparator import compare_csv_files
 from .mcp_tools_call import mcp_server  # MCPサーバーインスタンス
 
 app = FastAPI()
@@ -138,13 +138,15 @@ async def handle_csv_diff(request: Request, uuid: str):
 
 @app.post("/output-csv-compare")
 async def handle_output_csv_diff(
-    request: Request, old_csv: str = Form(...), new_csv: str = Form(...)
+    request: Request, old_csv: UploadFile = File(...), new_csv: UploadFile = File(...)
 ):
-    json_data = compare_csv_files(old_csv, new_csv)
+    # print(f"Old CSV Path: {old_csv.filename}, New CSV Path: {new_csv.filename}")
+    # ここでCSV差分データの処理を行う
+    json_data = compare_csv_files(old_csv.filename, new_csv.filename)
+    # print(f"CSV差分JSONデータ: {json_data}")
 
     dateime_format = datetime.today().strftime("%Y%m%d%H%M")
     output_file = Path("output_json", f"csv_diff_{dateime_format}.json")
     with output_file.open("w", encoding="utf-8") as f:
         f.write(json_data)
-    # ここでCSV差分データの処理を行う
     return {"message": "CSV差分データを受け取りました"}

@@ -15,7 +15,7 @@ mcp_server = Server("attendance-management")
 async def handle_list_tools():
     return [
         Tool(
-            name="get_attendance_data",
+            name="get_specific_attendance",
             description="指定された社員の特定期間の勤怠一覧データを取得します。1ヶ月単位の集計などに使用します。",
             inputSchema={
                 "type": "object",
@@ -23,13 +23,13 @@ async def handle_list_tools():
                     "staff_id": {"type": "integer", "description": "社員ID (例: 123)"},
                     "from_day": {
                         "type": "string",
-                        "pattern": r"^\d{4}-\d{2}-\d{2}$",
-                        "description": "開始日 (YYYY-MM-DD形式)",
+                        "pattern": r"^\d{4}-\d{2}$",
+                        "description": "開始日 (YYYY-MM形式)",
                     },
                     "to_day": {
                         "type": "string",
-                        "pattern": r"^\d{4}-\d{2}-\d{2}$",
-                        "description": "終了日 (YYYY-MM-DD形式)",
+                        "pattern": r"^\d{4}-\d{2}$",
+                        "description": "終了日 (YYYY-MM形式)",
                     },
                 },
                 "required": ["staff_id", "from_day", "to_day"],
@@ -41,7 +41,7 @@ async def handle_list_tools():
 # 3. ツールの実行ロジック
 @mcp_server.call_tool()
 async def handle_call_tool(name: str, arguments: dict):
-    if name == "get_attendance_data":
+    if name == "get_specific_attendance":
         # 1. ツール実行ごとに新しいセッションを生成
         with Session() as db:
             try:
