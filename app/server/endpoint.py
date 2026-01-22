@@ -1,10 +1,17 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, status, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-
+from fastapi.responses import RedirectResponse
+from fastapi.templating import Jinja2Templates
 from starlette.responses import Response
 from mcp.server.sse import SseServerTransport
-import anyio
 
+import anyio
+import jwt
+from pathlib import Path
+import uuid
+from datetime import datetime
+
+from app.logics.csv_comparator import compare_csv_files
 from .mcp_tools_call import mcp_server  # MCPサーバーインスタンス
 
 app = FastAPI()
@@ -44,3 +51,102 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+SECRET_KEY = "you-will-never-guess"
+ALGORITHM = "HS256"
+
+
+def verify_token(token: str):
+    try:
+        # デコードと検証を一気に行う
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload  # {'user_id': 123, 'exp': ...} などの辞書が返る
+    except jwt.ExpiredSignatureError:
+        return "期限切れです"
+    except jwt.InvalidTokenError:
+        return "無効なトークンです"
+
+
+token_store = {}
+
+
+@app.get("/secure-data")
+async def read_users_me(request: Request):
+    param_token = request.query_params.get("token")
+
+    # トークンを一時的に保存
+    token_store["Auth token"] = param_token
+
+    # リダイレクト時にトークンIDのみを渡す
+    # 303 See Other - Must
+    # https://stackoverflow.com/questions/73076517/how-to-send-redirectresponse-from-a-post-to-a-get-route-in-fastapi
+    return RedirectResponse(
+        url=f"/read-secure?token_id={param_token}",
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
+
+
+# Fastapi : jinja2.exceptions.TemplateNotFound
+# https://stackoverflow.com/questions/67668606/fastapi-jinja2-exceptions-templatenotfound-index-html
+BASE_DIR = Path(__file__).resolve().parent.parent
+print(f"どこdir: {BASE_DIR}")
+
+templates = Jinja2Templates(directory=str(Path(BASE_DIR, "templates")))
+
+
+@app.get("/read-secure")
+async def read_secure_data(request: Request):
+    token_id = request.query_params.get("token_id")
+    print(f"Received url token: {token_id}")
+    token = token_store.get("Auth token")
+
+    verification_result = verify_token(token)
+    # 新しいトークンIDを生成
+    inner_token_id = str(uuid.uuid4())
+    token_store["UUID"] = inner_token_id
+
+    if isinstance(verification_result, dict):
+        # トークンが有効な場合の処理
+        # return {
+        #     "message": "セキュアデータにアクセスしました",
+        #     "user_data": verification_result,
+        # }
+        return templates.TemplateResponse(
+            "select_home.html",
+            {
+                "request": request,
+                "user_data": verification_result,
+                "uuid": inner_token_id,
+            },
+        )
+    else:
+        # トークンが無効または期限切れの場合の処理
+        return {"error": verification_result}
+
+
+@app.get("/csv-diff")
+async def handle_csv_diff(request: Request, uuid: str):
+    # UUIDを使ってトークンを取得
+    stored_uuid = token_store.get("UUID")
+    if stored_uuid != uuid:
+        return {"error": "無効なUUIDです"}
+
+    return templates.TemplateResponse(
+        "csv/csv_diff.html", {"request": request, "uuid": uuid}
+    )
+
+
+@app.post("/output-csv-compare")
+async def handle_output_csv_diff(
+    request: Request, old_csv: UploadFile = File(...), new_csv: UploadFile = File(...)
+):
+    # print(f"Old CSV Path: {old_csv.filename}, New CSV Path: {new_csv.filename}")
+    # ここでCSV差分データの処理を行う
+    json_data = compare_csv_files(old_csv.filename, new_csv.filename)
+    # print(f"CSV差分JSONデータ: {json_data}")
+
+    dateime_format = datetime.today().strftime("%Y%m%d%H%M")
+    output_file = Path("output_json", f"csv_diff_{dateime_format}.json")
+    with output_file.open("w", encoding="utf-8") as f:
+        f.write(json_data)
+    return {"message": "CSV差分データを受け取りました"}

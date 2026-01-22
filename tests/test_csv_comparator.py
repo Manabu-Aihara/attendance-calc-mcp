@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 
 # テスト対象の関数をインポート
-from app.csv_comparator import compare_csv_files, REQUIRED_COLUMNS
+from app.logics.csv_comparator import compare_csv_files, REQUIRED_COLUMNS
 
 # --- テストデータ ---
 # ヘッダー
