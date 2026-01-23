@@ -4,6 +4,8 @@ from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from starlette.responses import Response
 from mcp.server.sse import SseServerTransport
+from mcp import ClientSession
+from mcp.client.sse import sse_client
 
 import anyio
 import jwt
@@ -39,7 +41,7 @@ async def handle_sse(request: Request):
 @app.post("/messages")
 async def handle_messages(request: Request):
     """クライアントからのJSON-RPCリクエストを受けるエンドポイント"""
-    await sse_transport.handle_post_request(
+    await sse_transport.handle_post_message(
         request.scope, request.receive, request._send
     )
 
@@ -150,3 +152,36 @@ async def handle_output_csv_diff(
     with output_file.open("w", encoding="utf-8") as f:
         f.write(json_data)
     return {"message": "CSV差分データを受け取りました"}
+
+
+@app.get("/get-attendance")
+async def host_get_attendance(request: Request, uuid: str):
+    # UUIDを使ってトークンを取得
+    stored_uuid = token_store.get("UUID")
+    if stored_uuid != uuid:
+        return {"error": "無効なUUIDです"}
+
+    # 1. MCP サーバーに接続（SSEクライアントとして）
+    async with sse_client("http://127.0.0.1:8001/sse") as (read_stream, write_stream):
+        async with ClientSession(read_stream, write_stream) as session:
+            await session.initialize()
+            # response = await session.list_tools()
+            # print(f"Tools: {response.tools}")
+            # templates = await session.list_templates()
+            # print(f"Templates: {templates.templates}")
+
+            # 2. ツールを呼び出す
+            result = await session.call_tool(
+                "get_specific_attendance",
+                arguments={
+                    "staff_id": 201,
+                    "from_day": "2025-12-01",
+                    "to_day": "2025-12-31",
+                },
+            )
+
+    # 3. 結果を Jinja2 で HTML に変換して返す（htmxがこれを受け取って画面を更新）
+    return templates.TemplateResponse(
+        "prompt/mcp_prompt.html",
+        {"request": request, "data": result.content[0].text},
+    )

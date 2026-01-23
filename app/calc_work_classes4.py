@@ -253,7 +253,11 @@ class CalcTimeClass:
         """
 
     def get_over_time(self) -> float:
-        input_work_time = self.check_over_work()  # self.overtime_check == "1" が前提
+        # self.overtime_check == "1" が前提
+        if self.overtime_check == "0":
+            return 0.0
+
+        input_work_time = self.check_over_work()
         for one_notification in self.notifications:
             if one_notification in self.n_half_list + ["6"]:
                 over_time_in_work = input_work_time - self.contract_work_time / 2
