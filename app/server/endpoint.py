@@ -30,7 +30,7 @@ sse_transport = SseServerTransport("/messages")
 async def handle_sse(request: Request):
     """MCPクライアントが最初に接続するエンドポイント"""
     async with sse_transport.connect_sse(
-        request.scope, request.receive, request._send
+        request.scope, request.receive, request.scope["send"]
     ) as (read_stream, write_stream):
         # MCPサーバーをこのSSEコネクション上で実行
         await mcp_server.run(
@@ -42,7 +42,7 @@ async def handle_sse(request: Request):
 async def handle_messages(request: Request):
     """クライアントからのJSON-RPCリクエストを受けるエンドポイント"""
     await sse_transport.handle_post_message(
-        request.scope, request.receive, request._send
+        request.scope, request.receive, request.scope["send"]
     )
 
 
@@ -154,7 +154,7 @@ async def handle_output_csv_diff(
     return {"message": "CSV差分データを受け取りました"}
 
 
-@app.get("/get-attendance")
+@app.post("/get-attendance")
 async def host_get_attendance(request: Request, uuid: str):
     # UUIDを使ってトークンを取得
     stored_uuid = token_store.get("UUID")
@@ -169,14 +169,15 @@ async def host_get_attendance(request: Request, uuid: str):
             # print(f"Tools: {response.tools}")
             # templates = await session.list_templates()
             # print(f"Templates: {templates.templates}")
+            staff_id = request.query_params.get("staff_id")
+            target_month = request.query_params.get("target_month")
 
             # 2. ツールを呼び出す
             result = await session.call_tool(
                 "get_specific_attendance",
                 arguments={
-                    "staff_id": 201,
-                    "from_day": "2025-12-01",
-                    "to_day": "2025-12-31",
+                    "staff_id": int(staff_id),
+                    "target_month": target_month,
                 },
             )
 
