@@ -100,7 +100,12 @@ def collect_attendance_data(
 
         input_work_time = calculation_instance.calc_base_work_time()
         normal_rest_time = calculation_instance.calc_normal_rest(input_work_time)
-        attendance_data[work_day]["通常休憩時間"] = normal_rest_time
+        normal_rest_time_str = (
+            re.sub(r"([0-9]{1,2}):([0-9]{2}):00", r"\1:\2", f"{normal_rest_time}")
+            if normal_rest_time > timedelta(hours=0)
+            else "0.0"
+        )
+        attendance_data[work_day]["通常休憩時間"] = normal_rest_time_str
 
         # 実働時間
         actual_work_time = calculation_instance.get_actual_work_time()
@@ -117,7 +122,7 @@ def collect_attendance_data(
 
         # 残業時間
         over_work_time = calculation_instance.get_over_time()
-        attendance_data[work_day]["残業時間"] = over_work_time
+        attendance_data[work_day]["時間外"] = over_work_time
 
         # 備考
         attendance_data[work_day]["備考"] = attendance_obj.REMARK

@@ -11,4 +11,14 @@
 
 <body>
     <h1>MCP prompt for attendance</h1>
-    <p>{{ uuid }}</p>
+    <!-- <p>{{ uuid }}</p>
+    <p>{{ data }}</p> -->
+    <form method="post" action="host_get_attendance" enctype="multipart/form-data">
+        <input type="text" name="staff_id">
+        <input type="month" name="target_month">
+        <input type="submit" value="submit">
+        <!-- <textarea name="talk"></textarea> -->
+    </form>
+</body>
+
+</html>
