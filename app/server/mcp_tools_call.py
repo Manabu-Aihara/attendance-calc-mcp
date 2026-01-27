@@ -1,6 +1,13 @@
 from fastapi.concurrency import run_in_threadpool  # FastAPIのユーティリティ
 from mcp.types import Tool, TextContent
 from mcp.server import Server
+from mcp.types import (
+    Prompt,
+    PromptMessage,
+    PromptArgument,
+    GetPromptResult,
+    TextContent,
+)
 
 import json
 from typing import Dict, List, Any
@@ -20,7 +27,7 @@ async def handle_list_tools():
         Tool(
             name="get_specific_attendance",
             description=(
-                "指定された社員の特定期間の勤怠一覧データを取得します。1ヶ月単位のデータを、1日毎に出力します。",
+                "指定された社員の特定期間の勤怠一覧データを取得します。1ヶ月単位のデータを、1日毎に出力します。"
                 "社員の勤怠一覧を取得します。レスポンスの各キーの意味は以下の通りです：\n"
                 "- d: 日付\n"
                 "- sid: 社員ID\n"
@@ -33,10 +40,10 @@ async def handle_list_tools():
                 "- cw: 契約労働時間\n"
                 "- ch: 契約有休時間\n"
                 "- nr: 通常休憩時間\n"
-                "- wt: 実働時間\n"
-                "- rt: リアル実働時間\n"
+                "- wt: 実働時間(休憩時間を除いた勤務時間合計)\n"
+                "- rt: リアル実働時間(実働時間から有休等の届出時間を差し引いた、現場での純粋な活動時間。※賃金や給与とは無関係です。)\n"
                 "- ot: 時間外\n"
-                "- rmk: 備考",
+                "- rmk: 備考"
             ),
             inputSchema={
                 "type": "object",
@@ -65,6 +72,7 @@ ATTENDANCE_KEY_MAP = {
     "勤務形態": "typ",
     "契約労働時間": "cw",
     "契約有休時間": "ch",
+    "通常休憩時間": "nr",
     "実働時間": "wt",
     "リアル実働時間": "rt",
     "時間外": "ot",
@@ -84,10 +92,10 @@ def diet_collect_attendance_data(
 
         for full_key, short_key in ATTENDANCE_KEY_MAP.items():
             # 同日で社員IDが重複する場合はスキップ
-            if day == shortened_record.get("d") and record.get(
-                "社員ID"
-            ) == shortened_record.get("sid"):
-                continue
+            # if day == shortened_record.get("d") and record.get(
+            #     "社員ID"
+            # ) == shortened_record.get("sid"):
+            #     continue
             if full_key in record:
                 shortened_record[short_key] = record[full_key]
 
@@ -113,6 +121,10 @@ async def get_specific_attendance(arguments: Dict):
     from_day = f"{year}-{month:02d}-01"
     last_day = calendar.monthrange(year, month)[1]
     to_day = f"{year}-{month:02d}-{last_day}"
+
+    print(
+        f"Fetching attendance for Staff ID: {type(arguments['staff_id'])} from {from_day} to {to_day}"
+    )
 
     # 1. ツール実行ごとに新しいセッションを生成
     with Session() as db:
@@ -145,3 +157,35 @@ async def handle_call_tool(name: str, arguments: Dict):
         return await get_specific_attendance(arguments)
 
     raise ValueError(f"Tool not found: {name}")
+
+
+@mcp_server.list_prompts()
+async def handle_list_prompts():
+    return [
+        Prompt(
+            name="fetch_attendance",
+            description="指定された期間、対象社員の勤怠データを抽出します。",
+            arguments=[
+                PromptArgument(name="staff_id", description="社員ID", required=True)
+            ],
+        )
+    ]
+
+
+@mcp_server.get_prompt()
+async def handle_get_prompt(name: str, arguments: dict):
+    if name == "fetch_attendance":
+        staff_id = arguments.get("staff_id", "社員ID")
+        return GetPromptResult(
+            description="勤怠一覧プロンプト",
+            messages=[
+                PromptMessage(
+                    role="user",
+                    content=TextContent(
+                        type="text",
+                        text=f"{staff_id}さんの、指定した月の勤怠データの一覧を表示してください。",
+                    ),
+                )
+            ],
+        )
+    raise ValueError(f"Prompt not found: {name}")

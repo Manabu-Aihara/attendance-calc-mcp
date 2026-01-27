@@ -2,23 +2,32 @@
 <html lang="ja">
 
 <head>
-    <meta charset="UTF-8">
+    <!-- <meta charset="UTF-8"> -->
+    <!--
+    Source - https://stackoverflow.com/a
+    Posted by Ry-
+    Retrieved 2026-01-27, License - CC BY-SA 4.0
+    -->
+
+    <meta http-equiv="Content-Type" content="text/event-stream" charset="utf-8" />
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://unpkg.com/htmx.org@2.0.8/dist/htmx.min.js"></script>
-    <title>Select page</title>
+    <title>Conversation page</title>
 </head>
 </head>
 
 <body>
     <h1>MCP prompt for attendance</h1>
-    <!-- <p>{{ uuid }}</p>
-    <p>{{ data }}</p> -->
-    <form method="post" action="host_get_attendance" enctype="multipart/form-data">
+    <p>{{ uuid }}</p>
+    <p>{{ data }}</p>
+    <form method="post" hx-post="/fetch-attendance" enctype="multipart/form-data" hx-target="#result">
         <input type="text" name="staff_id">
         <input type="month" name="target_month">
         <input type="submit" value="submit">
         <!-- <textarea name="talk"></textarea> -->
     </form>
+    <div id="result"></div>
 </body>
 
 </html>
