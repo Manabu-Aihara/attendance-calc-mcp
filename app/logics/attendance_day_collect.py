@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.database_base import session
 from app.attendance_contract_query import ContractTimeAttendance
-from app.calc_work_classes4 import CalcTimeFactory
+from app.calc_work_classes_4_mcp import CalcTimeFactory
 from app.models import Attendance, Notification, Contract
 
 
@@ -59,6 +59,8 @@ def collect_attendance_data(
         attendance_data[work_day] = {}
 
         attendance_data[work_day]["社員ID"] = attendance_obj.STAFFID
+        # オンコール
+        attendance_data[work_day]["オンコール"] = attendance_obj.ONCALL
         # 開始時間
         attendance_data[work_day]["出勤"] = convert_time(attendance_obj.STARTTIME)
         # 終了時間
@@ -107,6 +109,14 @@ def collect_attendance_data(
         )
         attendance_data[work_day]["通常休憩時間"] = normal_rest_time_str
 
+        # 時間休の有無
+        attendance_data[work_day]["時間休"] = (
+            "1"
+            if attendance_obj.NOTIFICATION in calculation_instance.n_time_off_list
+            or attendance_obj.NOTIFICATION2 in calculation_instance.n_time_off_list
+            else "0"
+        )
+
         # 実働時間
         actual_work_time = calculation_instance.get_actual_work_time()
         actual_work_time_str = (
@@ -118,11 +128,21 @@ def collect_attendance_data(
 
         # 実働時間(リアルタイム)
         real_time = calculation_instance.get_real_time()
-        attendance_data[work_day]["リアル実働時間"] = real_time
+        real_time_str = (
+            re.sub(r"([0-9]{1,2}):([0-9]{2}):00", r"\1:\2", f"{real_time}")
+            if real_time > timedelta(hours=0)
+            else "0.0"
+        )
+        attendance_data[work_day]["リアル実働時間"] = real_time_str
 
         # 残業時間
         over_work_time = calculation_instance.get_over_time()
-        attendance_data[work_day]["時間外"] = over_work_time
+        over_work_time_str = (
+            re.sub(r"([0-9]{1,2}):([0-9]{2}):00", r"\1:\2", f"{over_work_time}")
+            if over_work_time > timedelta(hours=0)
+            else "0.0"
+        )
+        attendance_data[work_day]["時間外"] = over_work_time_str
 
         # 備考
         attendance_data[work_day]["備考"] = attendance_obj.REMARK

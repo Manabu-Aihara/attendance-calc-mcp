@@ -19,7 +19,7 @@ class CalcTimeClass:
     # start_day: InitVar[date]
     # key_end_day: InitVar[date]
 
-    n_code_list: List[str] = field(
+    n_time_off_list: List[str] = field(
         default_factory=lambda: ["10", "11", "12", "13", "14", "15"]
     )
     n_half_list: List[str] = field(default_factory=lambda: ["4", "9", "16"])
@@ -110,11 +110,20 @@ class CalcTimeClass:
         """
 
     def get_times_rest(self, notification: str) -> timedelta:
-        if self.n_code_list[0] == notification or self.n_code_list[3] == notification:
+        if (
+            self.n_time_off_list[0] == notification
+            or self.n_time_off_list[3] == notification
+        ):
             return timedelta(hours=1)
-        elif self.n_code_list[1] == notification or self.n_code_list[4] == notification:
+        elif (
+            self.n_time_off_list[1] == notification
+            or self.n_time_off_list[4] == notification
+        ):
             return timedelta(hours=2)
-        elif self.n_code_list[2] == notification or self.n_code_list[5] == notification:
+        elif (
+            self.n_time_off_list[2] == notification
+            or self.n_time_off_list[5] == notification
+        ):
             return timedelta(hours=3)
 
     # 通常一日の時間休
@@ -228,7 +237,7 @@ class CalcTimeClass:
     # 9: 慶弔 congratulations and condolences
     def get_actual_work_time(self) -> timedelta:
         for i, notification in enumerate(self.notifications):
-            if i == 0 and notification in self.n_code_list + [""]:
+            if i == 0 and notification in self.n_time_off_list + [""]:
                 pass
             elif notification == "5":
                 return self.contract_work_time
@@ -252,7 +261,7 @@ class CalcTimeClass:
         @Return: float
         """
 
-    def get_over_time(self) -> float:
+    def get_over_time(self) -> timedelta:
         # self.overtime_check == "1" が前提
         if self.overtime_check == "0":
             return 0.0
@@ -263,7 +272,7 @@ class CalcTimeClass:
                 over_time_in_work = input_work_time - self.contract_work_time / 2
             else:
                 over_time_in_work = input_work_time - self.contract_work_time
-        return over_time_in_work.total_seconds()
+        return over_time_in_work
 
     """
         @Return: float
@@ -271,7 +280,7 @@ class CalcTimeClass:
         """
 
     # リアル実働時間（労働時間 - 年休、出張、時間休など）
-    def get_real_time(self) -> float:
+    def get_real_time(self) -> timedelta:
         # 年休全日、出張全日なら00:00
         working_time = self.check_over_work()
         print(f"△Actual work time: {working_time}")
@@ -282,13 +291,13 @@ class CalcTimeClass:
                 elif one_notification == "6":  # 半日出張
                     working_time -= self.contract_work_time / 2
                 else:
-                    if one_notification in self.n_code_list:
+                    if one_notification in self.n_time_off_list:
                         working_time -= self.get_times_rest(one_notification)
             else:
-                if one_notification in self.n_code_list:
+                if one_notification in self.n_time_off_list:
                     working_time -= self.get_times_rest(one_notification)
 
-        return working_time.total_seconds()
+        return working_time
 
     """
         看護師限定、休日出勤
