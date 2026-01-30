@@ -3,10 +3,10 @@ from datetime import date
 
 from sqlalchemy import and_, func
 
-from .database_base import session
+from app.database.database_base import session
 
 # from .database_async import get_session
-from .models import (
+from app.models.models import (
     User,
     Attendance,
     Contract,

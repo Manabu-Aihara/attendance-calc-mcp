@@ -6,10 +6,10 @@ from datetime import timedelta
 
 from sqlalchemy.orm import Session
 
-from app.database_base import session
-from app.attendance_contract_query import ContractTimeAttendance
-from app.calc_work_classes_4_mcp import CalcTimeFactory
-from app.models import Attendance, Notification, Contract
+from app.database.database_base import session
+from app.database.attendance_contract_query import ContractTimeAttendance
+from app.caluculation.calc_work_classes_4_mcp import CalcTimeFactory
+from app.models.models import Attendance, Notification, Contract
 
 
 def convert_time(str_value):

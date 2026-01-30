@@ -12,7 +12,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from .database_base import Base
+from app.database.database_base import Base
 
 # SQLAlchemyのマイグレーションツール Alambic導入時のトラブルシューティングまとめ
 # https://www.sria.co.jp/blog/2021/06/5545/

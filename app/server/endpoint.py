@@ -16,7 +16,10 @@ from pathlib import Path
 import uuid
 from datetime import datetime
 
+from app.database.database_base import session
+from app.logics.attendance_day_collect import collect_attendance_data
 from app.logics.csv_comparator import compare_csv_files
+from app.logics.logic_util import get_date_range, convert_to_dataframe
 from .mcp_tools_call import mcp_server  # MCPサーバーインスタンス
 
 app = FastAPI()
@@ -199,47 +202,61 @@ async def read_secure_data(request: Request):
 
 
 @app.get("/csv-diff")
-async def handle_csv_diff(request: Request, uuid: str):
+async def handle_csv_diff(request: Request, uuid: str, filename: str = ""):
     # UUIDを使ってトークンを取得
     stored_uuid = token_store.get("UUID")
     if stored_uuid != uuid:
         return {"error": "無効なUUIDです"}
-
+    
     return templates.TemplateResponse(
-        "csv/csv_diff.html", {"request": request, "uuid": uuid}
+        "csv/csv_diff.html",
+        {"request": request, "uuid": uuid, "json_file_name": filename}
     )
 
 
 @app.post("/output-csv-compare")
 async def handle_output_csv_diff(
-    request: Request, old_csv: UploadFile = File(...), new_csv: UploadFile = File(...)
+    request: Request, uuid: str = Form(...), old_csv: UploadFile = File(...), new_csv: UploadFile = File(...)
 ):
     # print(f"Old CSV Path: {old_csv.filename}, New CSV Path: {new_csv.filename}")
+    print(f"Received UUID: {uuid}")
+    stored_uuid = token_store.get("UUID")
+    if stored_uuid != uuid:
+        return {"error": "無効なUUIDです"}
+    
     # ここでCSV差分データの処理を行う
     json_data = compare_csv_files(old_csv.filename, new_csv.filename)
     # print(f"CSV差分JSONデータ: {json_data}")
 
     dateime_format = datetime.today().strftime("%Y%m%d%H%M")
-    output_file = Path("output_json", f"csv_diff_{dateime_format}.json")
+    json_file = f"csv_diff_{dateime_format}.json"
+    output_file = Path("output_json", json_file)
+
     with output_file.open("w", encoding="utf-8") as f:
         f.write(json_data)
-    return {"message": "CSV差分データを受け取りました"}
+
+    # return {"message": "CSV差分データを受け取りました"}
+    return RedirectResponse(url=f"/csv-diff?uuid={uuid}&filename={json_file}", status_code=status.HTTP_303_SEE_OTHER)
 
 
-@app.get("/get-attendance")
-async def get_attendance(request: Request, uuid: str):
+@app.get("/fetch-attendance")
+async def get_attendance(request: Request, uuid: str, staff_id: str, target_month: str):
     # UUIDを使ってトークンを取得
     stored_uuid = token_store.get("UUID")
     if stored_uuid != uuid:
         return {"error": "無効なUUIDです"}
+    
+    from_day, to_day = get_date_range(target_month)
+    staff_data_dict = collect_attendance_data(staff_id=int(staff_id), from_day=from_day, to_day=to_day)
+    staff_data_df = convert_to_dataframe(staff_data_dict)
 
     return templates.TemplateResponse(
-        "prompt/mcp_prompt.html",
-        {"request": request, "data": "ここに勤怠データが表示されます"},
+        "prompt/user_attendance.html",
+        {"request": request, "df_data_html": staff_data_df.to_html(escape=False)},
     )
 
 
-@app.post("/fetch-attendance")
+@app.post("/analyze-attendance-prompt")
 async def fetch_attendance(
     request: Request, staff_id: str = Form(...), target_month: str = Form(...)
 ):
@@ -248,8 +265,8 @@ async def fetch_attendance(
     async with sse_client("http://127.0.0.1:8001/sse") as (read_stream, write_stream):
         async with ClientSession(read_stream, write_stream) as session:
             await session.initialize()
-            response = await session.list_tools()
-            print(f"Tools: {response.tools}")
+            # response = await session.list_tools()
+            # print(f"Tools: {response.tools}")
             # templates = await session.list_templates()
             # print(f"Templates: {templates.templates}")
             print(f"Staff ID: {request.query_params.get("staff_id")}")
@@ -272,7 +289,7 @@ async def fetch_attendance(
 
     response = client.models.generate_content(
         model="gemini-2.5-flash",
-        contents=f"次の勤怠データを解析して、一覧で提供してください：{raw_json}"
+        contents=f"次の勤怠データを解析して、異常がないか確認してください：{raw_json}"
     )
 
     # 3. 結果を Jinja2 で HTML に変換して返す（htmxがこれを受け取って画面を更新）

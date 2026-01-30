@@ -3,10 +3,9 @@ from dataclasses import dataclass, field, InitVar
 from functools import lru_cache
 from datetime import datetime, timedelta, time
 
-from .database_base import session
+from app.database.database_base import session
 
-# from app import db
-from .models import User
+from app.models.models import User
 
 
 @dataclass
@@ -264,7 +263,7 @@ class CalcTimeClass:
     def get_over_time(self) -> timedelta:
         # self.overtime_check == "1" が前提
         if self.overtime_check == "0":
-            return 0.0
+            return timedelta(0)
 
         input_work_time = self.check_over_work()
         for one_notification in self.notifications:
