@@ -1,6 +1,9 @@
 # attendance_logic.py (新規作成)
 from datetime import datetime, timedelta
 import calendar
+from typing import Any, Dict, List
+
+
 from .attendance_day_collect import collect_attendance_data
 
 """
@@ -12,7 +15,7 @@ from .attendance_day_collect import collect_attendance_data
 """
 
 
-def get_attendance_details_logic(staff_id: int, target_month: str) -> str:
+def get_attendance_details_logic(staff_id: int, target_month: str) -> Dict[str, Any]:
     """ツールのコアロジック(テスト可能)"""
     year, month = map(int, target_month.split("-"))
     from_day = f"{year}-{month:02d}-01"

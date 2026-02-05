@@ -13,7 +13,18 @@ def get_date_range(specified_month: str) -> Tuple[str, str]:
     return from_day, to_day
 
 
-def convert_to_dataframe(dict_data: Dict[int, Dict[str, Any]]) -> "pd.DataFrame":
+FIXED_KEY_MAP = {
+    "社員ID": "sid",
+    "勤務形態": "typ",
+    "契約労働時間": "cw",
+    "契約有休時間": "ch",
+}
+
+
+def convert_to_dataframe(dict_data: Dict[Any, Any]) -> "pd.DataFrame":
+    for key in list(dict_data.keys()):
+        if key in FIXED_KEY_MAP.keys():
+            del dict_data[key]
 
     df = pd.DataFrame(dict_data).T  # Transpose to have days as rows
     return df

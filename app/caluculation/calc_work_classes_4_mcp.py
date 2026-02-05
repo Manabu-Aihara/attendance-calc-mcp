@@ -140,7 +140,7 @@ class CalcTimeClass:
 
     """
         irregular case handling
-        irregular case: 入力時間 (- 通常の休憩) < contract time
+        irregular case: 入力時間 < contract time
         @Params: timedelta input_work_time, int approval_count
         @Return: timedelta
         """
@@ -156,7 +156,7 @@ class CalcTimeClass:
         else:
             return timedelta(0)
 
-        return deal_with_irregular_time + self.calc_normal_rest(input_work_time)
+        return deal_with_irregular_time  # + self.calc_normal_rest(input_work_time)
 
     """
         休暇申請が半日ある場合の実働時間調整

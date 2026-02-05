@@ -23,13 +23,101 @@
 
 <body>
     <h1>User attendance page</h1>
-    <div>{{ df_data_html }}</div>
-    <div>
-        <form method="post" action="analyze-attendance-prompt">
-            <input type="submit" value="Chat for attendance">
-        </form>
-    </div>
+    {{ df_data_html }}
 
-</body>
-
-</html>
+<table border="1" class="dataframe table table-striped">
+  <thead>
+    <tr style="text-align: right;">
+      <th>社員ID</th>
+      <th>オンコール</th>
+      <th>出勤</th>
+      <th>退勤</th>
+      <th>届出(AM)</th>
+      <th>届出(PM)</th>
+      <th>残業申請</th>
+      <th>勤務形態</th>
+      <th>契約労働時間</th>
+      <th>契約有休時間</th>
+      <th>通常休憩時間</th>
+      <th>時間休</th>
+      <th>実働時間</th>
+      <th>リアル実働時間</th>
+      <th>時間外</th>
+      <th>備考</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>3</td>
+      <td>2</td>
+      <td>00:00</td>
+      <td>00:00</td>
+      <td>None</td>
+      <td>None</td>
+      <td>0</td>
+      <td>6H常勤</td>
+      <td>6.0</td>
+      <td>6.0</td>
+      <td>0.0</td>
+      <td>0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>0</td>
+      <td>09:15</td>
+      <td>16:25</td>
+      <td>None</td>
+      <td>None</td>
+      <td>0</td>
+      <td>6H常勤</td>
+      <td>6.0</td>
+      <td>6.0</td>
+      <td>1:00</td>
+      <td>0</td>
+      <td>6:00</td>
+      <td>6:00</td>
+      <td>0.0</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>0</td>
+      <td>00:00</td>
+      <td>00:00</td>
+      <td>年休全日</td>
+      <td>None</td>
+      <td>0</td>
+      <td>6H常勤</td>
+      <td>6.0</td>
+      <td>6.0</td>
+      <td>0.0</td>
+      <td>0</td>
+      <td>6:00</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>3</td>
+      <td>14:20</td>
+      <td>20:30</td>
+      <td>None</td>
+      <td>None</td>
+      <td>0</td>
+      <td>6H常勤</td>
+      <td>6.0</td>
+      <td>6.0</td>
+      <td>0.0</td>
+      <td>0</td>
+      <td>6:00</td>
+      <td>6:00</td>
+      <td>0.0</td>
+      <td></td>
+    </tr>
+  </tbody>
+</table></body></html>

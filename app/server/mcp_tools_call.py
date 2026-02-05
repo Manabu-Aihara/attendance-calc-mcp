@@ -14,7 +14,7 @@ from typing import Dict, List, Any
 
 from app.database.database_base import Session
 from app.logics.attendance_day_collect import collect_attendance_data
-from app.logics.logic_util import get_date_range
+from app.logics.logic_util import get_date_range, FIXED_KEY_MAP
 
 # 1. サーバーインスタンスの作成
 mcp_server = Server("attendance-management")
@@ -76,16 +76,16 @@ async def handle_list_tools():
 
 # mcp_tools_call.py への実装例
 ATTENDANCE_KEY_MAP = {
-    "社員ID": "sid",
+    # "社員ID": "sid",
     "オンコール": "oc",
     "出勤": "in",
     "退勤": "out",
     "届出(AM)": "am",
     "届出(PM)": "pm",
     "残業申請": "oa",
-    "勤務形態": "typ",
-    "契約労働時間": "cw",
-    "契約有休時間": "ch",
+    # "勤務形態": "typ",
+    # "契約労働時間": "cw",
+    # "契約有休時間": "ch",
     "通常休憩時間": "nr",
     "時間休": "tr",
     "実働時間": "wt",
@@ -96,25 +96,38 @@ ATTENDANCE_KEY_MAP = {
 
 
 def diet_collect_attendance_data(
-    attendance_data: Dict[int, Dict[str, Any]],
+    attendance_data: Dict[Any, Any],
 ) -> List[TextContent]:
     """
     元の巨大な辞書データから、必要なキーだけを短縮して抽出するユーティリティ。
     """
     lightweight_list = []
+    shortened_fix_record = {}
+    for key, value in attendance_data.items():
+        if isinstance(key, str) and key in FIXED_KEY_MAP:
+            # for full_key, short_key in FIXED_KEY_MAP.items():
+            short_key = FIXED_KEY_MAP[key]
+            shortened_fix_record[short_key] = value
+        else:
+            break
+    lightweight_list.append(shortened_fix_record)
+    print(f"Fixed part processed: {lightweight_list}")
+
+    shortened_day_record = {}
     for day, record in attendance_data.items():
-        shortened_record = {"d": day}
+        if isinstance(day, int):
+            shortened_day_record = {"d": day}
 
-        for full_key, short_key in ATTENDANCE_KEY_MAP.items():
-            # 同日で社員IDが重複する場合はスキップ
-            # if day == shortened_record.get("d") and record.get(
-            #     "社員ID"
-            # ) == shortened_record.get("sid"):
-            #     continue
-            if full_key in record:
-                shortened_record[short_key] = record[full_key]
+            for full_key, short_key in ATTENDANCE_KEY_MAP.items():
+                # 同日で社員IDが重複する場合はスキップ
+                # if day == shortened_record.get("d") and record.get(
+                #     "社員ID"
+                # ) == shortened_record.get("sid"):
+                #     continue
+                # if full_key in record and isinstance(record, dict):
+                shortened_day_record[short_key] = record[full_key]
 
-        lightweight_list.append(shortened_record)
+            lightweight_list.append(shortened_day_record)
 
     # MCPのレスポンス形式（TextContent）に変換
     return [
