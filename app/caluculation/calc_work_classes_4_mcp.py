@@ -260,7 +260,7 @@ class CalcTimeClass:
         @Return: float
         """
 
-    def get_over_time(self) -> timedelta:
+    def get_over_time(self) -> float:
         # self.overtime_check == "1" が前提
         if self.overtime_check == "0":
             return timedelta(0)
@@ -271,7 +271,8 @@ class CalcTimeClass:
                 over_time_in_work = input_work_time - self.contract_work_time / 2
             else:
                 over_time_in_work = input_work_time - self.contract_work_time
-        return over_time_in_work
+        print(f"△Over time: {over_time_in_work}")
+        return over_time_in_work.total_seconds()
 
     """
         @Return: float
@@ -279,7 +280,7 @@ class CalcTimeClass:
         """
 
     # リアル実働時間（労働時間 - 年休、出張、時間休など）
-    def get_real_time(self) -> timedelta:
+    def get_real_time(self) -> float:
         # 年休全日、出張全日なら00:00
         working_time = self.check_over_work()
         print(f"△Actual work time: {working_time}")
@@ -296,7 +297,7 @@ class CalcTimeClass:
                 if one_notification in self.n_time_off_list:
                     working_time -= self.get_times_rest(one_notification)
 
-        return working_time
+        return working_time.total_seconds()
 
     """
         看護師限定、休日出勤

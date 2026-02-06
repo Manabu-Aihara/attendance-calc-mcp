@@ -170,7 +170,7 @@ async def read_users_me(request: Request):
 # Fastapi : jinja2.exceptions.TemplateNotFound
 # https://stackoverflow.com/questions/67668606/fastapi-jinja2-exceptions-templatenotfound-index-html
 BASE_DIR = Path(__file__).resolve().parent.parent
-print(f"どこdir: {BASE_DIR}")
+# print(f"どこdir: {BASE_DIR}")
 
 templates = Jinja2Templates(directory=str(Path(BASE_DIR, "templates")))
 
@@ -314,9 +314,33 @@ async def render_user_attendance(request: Request):
     )
 
 
-@app.post("/analyze-attendance-prompt")
-async def fetch_attendance(
+# The client gets the API key from the environment variable `GEMINI_API_KEY`.
+load_dotenv()
+api_key = os.getenv("GEMINI_API_KEY")
+client = genai.Client(api_key=api_key)
+
+
+@app.post("/chat-with-ai")
+async def chat_with_ai(
     request: Request, staff_id: str = Form(...), target_month: str = Form(...)
+):
+    """Renders the initial prompt page for attendance analysis."""
+    return templates.TemplateResponse(
+        "prompt/mcp_prompt.html",
+        {
+            "request": request,
+            "staff_id": staff_id,
+            "target_month": target_month,
+        },
+    )
+
+
+@app.post("/analyze-attendance-prompt")
+async def analyze_attendance_prompt(
+    request: Request,
+    staff_id: str = Form(...),
+    target_month: str = Form(...),
+    user_input: str = Form(...),
 ):
     """Fetches attendance data by calling the MCP tool
     and returns the result rendered in HTML."""
@@ -324,10 +348,6 @@ async def fetch_attendance(
     async with sse_client("http://127.0.0.1:8001/sse") as (read_stream, write_stream):
         async with ClientSession(read_stream, write_stream) as session:
             await session.initialize()
-            # response = await session.list_tools()
-            # print(f"Tools: {response.tools}")
-            # templates = await session.list_templates()
-            # print(f"Templates: {templates.templates}")
             print(f"Staff ID: {request.query_params.get('staff_id')}")
             print(f"Staff ID: {type(staff_id)}, Target Month: {target_month}")
 
@@ -341,18 +361,18 @@ async def fetch_attendance(
             )
             raw_json = result.content[0].text
 
-    # The client gets the API key from the environment variable `GEMINI_API_KEY`.
-    load_dotenv()
-    api_key = os.getenv("GEMINI_API_KEY")
-    client = genai.Client(api_key=api_key)
-
     response = client.models.generate_content(
         model="gemini-2.5-flash",
-        contents=f"次の勤怠データを解析して、異常がないか確認してください：{raw_json}",
+        # contents=f"次の勤怠データを解析して、異常がないか確認してください：{raw_json}",
+        contents=f"{user_input}\n\n{raw_json}",
     )
 
     # 3. 結果を Jinja2 で HTML に変換して返す（htmxがこれを受け取って画面を更新）
     return templates.TemplateResponse(
-        "prompt/mcp_prompt.html",
-        {"request": request, "data": response.text},
+        "prompt/ai_response.html",
+        {
+            "request": request,
+            "user_input": user_input,
+            "ai_response": response.text,
+        },
     )

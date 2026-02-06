@@ -187,10 +187,13 @@ async def handle_call_tool(name: str, arguments: Dict):
 async def handle_list_prompts():
     return [
         Prompt(
-            name="fetch_attendance",
-            description="指定された期間、対象社員の勤怠データを分析しまし、未入力がないかなどを確認します。",
+            name="analyze_attendance_prompt",
+            description="指定された期間、対象社員の勤怠データを分析し、異常がないかなどを確認します。",
             arguments=[
-                PromptArgument(name="staff_id", description="社員ID", required=True)
+                PromptArgument(name="staff_id", description="社員ID", required=True),
+                PromptArgument(
+                    name="target_month", description="対象月", required=True
+                ),
             ],
         )
     ]
@@ -198,7 +201,7 @@ async def handle_list_prompts():
 
 @mcp_server.get_prompt()
 async def handle_get_prompt(name: str, arguments: dict):
-    if name == "fetch_attendance":
+    if name == "analyze_attendance_prompt":
         staff_id = arguments.get("staff_id", "社員ID")
         return GetPromptResult(
             description="勤怠一覧プロンプト",
@@ -207,18 +210,20 @@ async def handle_get_prompt(name: str, arguments: dict):
                     role="user",
                     content=TextContent(
                         type="text",
-                        text="以下のデータは新システムの計算過程です。集計ロジックに不自然な点がないか分析してください。"
-                        "なお、回答の目的はあくまでユーザーの疑問（なぜマイナスか、など）に答えることであり、"
-                        "『信頼性を証明する』といったメタな目的を回答文に含める必要はありません。",
+                        text=(
+                            "以下のデータは新システムの計算過程です。集計ロジックに不自然な点がないか分析してください。"
+                            "なお、回答の目的はあくまでユーザーの疑問（なぜマイナスか、など）に答えることであり、"
+                            "『信頼性を証明する』といったメタな目的を回答文に含める必要はありません。"
+                        ),
                     ),
                 ),
-                PromptMessage(
-                    role="assistant",
-                    content=TextContent(
-                        type="text",
-                        # text
-                    ),
-                ),
+                # PromptMessage(
+                #     role="assistant",
+                #     content=TextContent(
+                #         type="text",
+                #         # text
+                #     ),
+                # ),
             ],
         )
     raise ValueError(f"Prompt not found: {name}")

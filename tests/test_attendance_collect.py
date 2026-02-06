@@ -1,28 +1,28 @@
 import pytest
 
-from app.logics.attendance_collect_logic import get_attendance_details_logic
 from app.logics.logic_util import convert_to_dataframe
+from app.logics.attendance_day_collect import format_rt
+
+
+def test_format_rt():
+    assert format_rt(0) == "00:00"
+    assert format_rt(3600) == "01:00"
+    assert format_rt(-3600) == "-01:00"
 
 
 @pytest.mark.skip
-def test_get_attendance_details():
-    mcp_result = get_attendance_details_logic(staff_id=201, target_month="2025-12")
-    print(mcp_result)
-
-
-# @pytest.mark.skip
 def test_collect_attendance_data():
     from app.logics.attendance_day_collect import collect_attendance_data
 
     attendance_data = collect_attendance_data(
-        staff_id=201, from_day="2025-12-01", to_day="2025-12-31"
+        staff_id=118, from_day="2025-12-01", to_day="2025-12-31"
     )
     print(attendance_data)
 
     from app.server.mcp_tools_call import diet_collect_attendance_data
 
     diet_data = diet_collect_attendance_data(attendance_data)
-    print(diet_data)
+    # print(diet_data)
 
     conv_df = convert_to_dataframe(attendance_data)
     print(conv_df)

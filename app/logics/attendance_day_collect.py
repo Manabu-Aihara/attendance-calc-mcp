@@ -31,6 +31,15 @@ def get_user_contract(contract_code: int, db_session: Session) -> str:
     return contract_query.NAME
 
 
+# 秒数を HH:MM に変換する処理を追加
+def format_rt(seconds):
+    if not seconds:
+        return "00:00"
+    h = int(seconds // 3600)
+    m = int((seconds % 3600) // 60)
+    return f"{h:03d}:{m:02d}" if seconds < 0 else f"{h:02d}:{m:02d}"
+
+
 def collect_attendance_data(
     staff_id: int, from_day: str, to_day: str, db_session: Session = session
 ) -> Dict[Dict[str, int | str | float], Dict[int, Dict[str, Any]]]:
@@ -71,6 +80,7 @@ def collect_attendance_data(
         # if work_day not in attendance_data:
         attendance_data[work_day] = {}
 
+        attendance_data[work_day]["日付"] = attendance_obj.WORKDAY.day
         # オンコール
         attendance_data[work_day]["オンコール"] = attendance_obj.ONCALL
         # 開始時間
@@ -140,21 +150,11 @@ def collect_attendance_data(
 
         # 実働時間(リアルタイム)
         real_time = calculation_instance.get_real_time()
-        real_time_str = (
-            re.sub(r"([0-9]{1,2}):([0-9]{2}):00", r"\1:\2", f"{real_time}")
-            if real_time > timedelta(hours=0)
-            else "0.0"
-        )
-        attendance_data[work_day]["リアル実働時間"] = real_time_str
+        attendance_data[work_day]["リアル実働時間"] = format_rt(real_time)
 
         # 残業時間
         over_work_time = calculation_instance.get_over_time()
-        over_work_time_str = (
-            re.sub(r"([0-9]{1,2}):([0-9]{2}):00", r"\1:\2", f"{over_work_time}")
-            if over_work_time > timedelta(hours=0)
-            else "0.0"
-        )
-        attendance_data[work_day]["時間外"] = over_work_time_str
+        attendance_data[work_day]["時間外"] = format_rt(over_work_time)
 
         # 備考
         attendance_data[work_day]["備考"] = attendance_obj.REMARK

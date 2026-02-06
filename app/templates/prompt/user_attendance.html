@@ -25,19 +25,16 @@
     <h1>User attendance page</h1>
     {{ df_data_html }}
 
-<table border="1" class="dataframe table table-striped">
+<section><div style='display:flex; flex-wrap:wrap; gap:10px;'><div>社員ID: 242</div><div>勤務形態: 8H常勤</div><div>契約労働時間: 8.0</div><div>契約有休時間: 8.0</div></div></section><table border="1" class="dataframe table table-striped">
   <thead>
     <tr style="text-align: right;">
-      <th>社員ID</th>
+      <th>日付</th>
       <th>オンコール</th>
       <th>出勤</th>
       <th>退勤</th>
       <th>届出(AM)</th>
       <th>届出(PM)</th>
       <th>残業申請</th>
-      <th>勤務形態</th>
-      <th>契約労働時間</th>
-      <th>契約有休時間</th>
       <th>通常休憩時間</th>
       <th>時間休</th>
       <th>実働時間</th>
@@ -48,75 +45,333 @@
   </thead>
   <tbody>
     <tr>
-      <td>3</td>
-      <td>2</td>
-      <td>00:00</td>
-      <td>00:00</td>
+      <td>1</td>
+      <td>0</td>
+      <td>08:00</td>
+      <td>17:00</td>
       <td>None</td>
       <td>None</td>
       <td>0</td>
-      <td>6H常勤</td>
-      <td>6.0</td>
-      <td>6.0</td>
-      <td>0.0</td>
-      <td>0</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td>0.0</td>
-      <td></td>
-    </tr>
-    <tr>
-      <td>3</td>
-      <td>0</td>
-      <td>09:15</td>
-      <td>16:25</td>
-      <td>None</td>
-      <td>None</td>
-      <td>0</td>
-      <td>6H常勤</td>
-      <td>6.0</td>
-      <td>6.0</td>
       <td>1:00</td>
       <td>0</td>
-      <td>6:00</td>
-      <td>6:00</td>
-      <td>0.0</td>
+      <td>8:00</td>
+      <td>08:00</td>
+      <td>00:00</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>0</td>
+      <td>08:00</td>
+      <td>17:00</td>
+      <td>None</td>
+      <td>None</td>
+      <td>0</td>
+      <td>1:00</td>
+      <td>0</td>
+      <td>8:00</td>
+      <td>08:00</td>
+      <td>00:00</td>
       <td></td>
     </tr>
     <tr>
       <td>3</td>
+      <td>0</td>
+      <td>08:00</td>
+      <td>12:00</td>
+      <td>None</td>
+      <td>生理休暇半日</td>
+      <td>0</td>
+      <td>0.0</td>
+      <td>0</td>
+      <td>8:00</td>
+      <td>04:00</td>
+      <td>00:00</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>0</td>
+      <td>13:00</td>
+      <td>17:00</td>
+      <td>年休半日</td>
+      <td>None</td>
+      <td>0</td>
+      <td>0.0</td>
+      <td>0</td>
+      <td>8:00</td>
+      <td>04:00</td>
+      <td>00:00</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>0</td>
+      <td>08:00</td>
+      <td>17:00</td>
+      <td>None</td>
+      <td>None</td>
+      <td>0</td>
+      <td>1:00</td>
+      <td>0</td>
+      <td>8:00</td>
+      <td>08:00</td>
+      <td>00:00</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td>0</td>
+      <td>08:00</td>
+      <td>12:00</td>
+      <td>None</td>
+      <td>None</td>
+      <td>0</td>
+      <td>0.0</td>
+      <td>0</td>
+      <td>4:00</td>
+      <td>04:00</td>
+      <td>00:00</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>9</td>
+      <td>0</td>
+      <td>08:00</td>
+      <td>17:00</td>
+      <td>None</td>
+      <td>None</td>
+      <td>0</td>
+      <td>1:00</td>
+      <td>0</td>
+      <td>8:00</td>
+      <td>08:00</td>
+      <td>00:00</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>10</td>
+      <td>0</td>
+      <td>08:00</td>
+      <td>17:00</td>
+      <td>None</td>
+      <td>None</td>
+      <td>0</td>
+      <td>1:00</td>
+      <td>0</td>
+      <td>8:00</td>
+      <td>08:00</td>
+      <td>00:00</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>11</td>
+      <td>0</td>
+      <td>08:00</td>
+      <td>17:00</td>
+      <td>None</td>
+      <td>None</td>
+      <td>0</td>
+      <td>1:00</td>
+      <td>0</td>
+      <td>8:00</td>
+      <td>08:00</td>
+      <td>00:00</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>12</td>
+      <td>0</td>
+      <td>08:00</td>
+      <td>17:00</td>
+      <td>None</td>
+      <td>None</td>
+      <td>0</td>
+      <td>1:00</td>
+      <td>0</td>
+      <td>8:00</td>
+      <td>08:00</td>
+      <td>00:00</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>15</td>
+      <td>0</td>
+      <td>08:00</td>
+      <td>17:00</td>
+      <td>None</td>
+      <td>None</td>
+      <td>0</td>
+      <td>1:00</td>
+      <td>0</td>
+      <td>8:00</td>
+      <td>08:00</td>
+      <td>00:00</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>16</td>
+      <td>0</td>
+      <td>08:00</td>
+      <td>17:00</td>
+      <td>None</td>
+      <td>None</td>
+      <td>0</td>
+      <td>1:00</td>
+      <td>0</td>
+      <td>8:00</td>
+      <td>08:00</td>
+      <td>00:00</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>17</td>
+      <td>0</td>
+      <td>08:00</td>
+      <td>17:00</td>
+      <td>None</td>
+      <td>None</td>
+      <td>0</td>
+      <td>1:00</td>
+      <td>0</td>
+      <td>8:00</td>
+      <td>08:00</td>
+      <td>00:00</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>18</td>
+      <td>0</td>
+      <td>08:00</td>
+      <td>17:00</td>
+      <td>None</td>
+      <td>None</td>
+      <td>0</td>
+      <td>1:00</td>
+      <td>0</td>
+      <td>8:00</td>
+      <td>08:00</td>
+      <td>00:00</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>19</td>
+      <td>0</td>
+      <td>08:00</td>
+      <td>12:00</td>
+      <td>None</td>
+      <td>None</td>
+      <td>0</td>
+      <td>0.0</td>
+      <td>0</td>
+      <td>4:00</td>
+      <td>04:00</td>
+      <td>00:00</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>22</td>
+      <td>0</td>
+      <td>08:00</td>
+      <td>17:00</td>
+      <td>None</td>
+      <td>None</td>
+      <td>0</td>
+      <td>1:00</td>
+      <td>0</td>
+      <td>8:00</td>
+      <td>08:00</td>
+      <td>00:00</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>23</td>
+      <td>0</td>
+      <td>08:00</td>
+      <td>17:00</td>
+      <td>None</td>
+      <td>None</td>
+      <td>0</td>
+      <td>1:00</td>
+      <td>0</td>
+      <td>8:00</td>
+      <td>08:00</td>
+      <td>00:00</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>24</td>
+      <td>0</td>
+      <td>08:00</td>
+      <td>17:00</td>
+      <td>None</td>
+      <td>None</td>
+      <td>0</td>
+      <td>1:00</td>
+      <td>0</td>
+      <td>8:00</td>
+      <td>08:00</td>
+      <td>00:00</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>25</td>
       <td>0</td>
       <td>00:00</td>
       <td>00:00</td>
       <td>年休全日</td>
       <td>None</td>
       <td>0</td>
-      <td>6H常勤</td>
-      <td>6.0</td>
-      <td>6.0</td>
       <td>0.0</td>
       <td>0</td>
-      <td>6:00</td>
-      <td>0.0</td>
-      <td>0.0</td>
+      <td>8:00</td>
+      <td>00:00</td>
+      <td>00:00</td>
       <td></td>
     </tr>
     <tr>
-      <td>3</td>
-      <td>3</td>
-      <td>14:20</td>
-      <td>20:30</td>
+      <td>26</td>
+      <td>0</td>
+      <td>08:00</td>
+      <td>17:00</td>
       <td>None</td>
       <td>None</td>
       <td>0</td>
-      <td>6H常勤</td>
-      <td>6.0</td>
-      <td>6.0</td>
-      <td>0.0</td>
+      <td>1:00</td>
       <td>0</td>
-      <td>6:00</td>
-      <td>6:00</td>
-      <td>0.0</td>
+      <td>8:00</td>
+      <td>08:00</td>
+      <td>00:00</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>29</td>
+      <td>0</td>
+      <td>08:00</td>
+      <td>17:00</td>
+      <td>None</td>
+      <td>None</td>
+      <td>0</td>
+      <td>1:00</td>
+      <td>0</td>
+      <td>8:00</td>
+      <td>08:00</td>
+      <td>00:00</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>30</td>
+      <td>0</td>
+      <td>08:00</td>
+      <td>17:00</td>
+      <td>None</td>
+      <td>None</td>
+      <td>0</td>
+      <td>1:00</td>
+      <td>0</td>
+      <td>8:00</td>
+      <td>08:00</td>
+      <td>00:00</td>
       <td></td>
     </tr>
   </tbody>
