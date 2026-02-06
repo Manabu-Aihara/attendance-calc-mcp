@@ -3,10 +3,9 @@ from dataclasses import dataclass, field, InitVar
 from functools import lru_cache
 from datetime import datetime, timedelta, time
 
-from .database_base import session
+from app.database.database_base import session
 
-# from app import db
-from .models import User
+from app.models.models import User
 
 
 @dataclass
@@ -141,7 +140,7 @@ class CalcTimeClass:
 
     """
         irregular case handling
-        irregular case: 入力時間 (- 通常の休憩) < contract time
+        irregular case: 入力時間 < contract time
         @Params: timedelta input_work_time, int approval_count
         @Return: timedelta
         """
@@ -157,7 +156,7 @@ class CalcTimeClass:
         else:
             return timedelta(0)
 
-        return deal_with_irregular_time + self.calc_normal_rest(input_work_time)
+        return deal_with_irregular_time  # + self.calc_normal_rest(input_work_time)
 
     """
         休暇申請が半日ある場合の実働時間調整
@@ -261,10 +260,10 @@ class CalcTimeClass:
         @Return: float
         """
 
-    def get_over_time(self) -> timedelta:
+    def get_over_time(self) -> float:
         # self.overtime_check == "1" が前提
         if self.overtime_check == "0":
-            return 0.0
+            return timedelta(0)
 
         input_work_time = self.check_over_work()
         for one_notification in self.notifications:
@@ -272,7 +271,8 @@ class CalcTimeClass:
                 over_time_in_work = input_work_time - self.contract_work_time / 2
             else:
                 over_time_in_work = input_work_time - self.contract_work_time
-        return over_time_in_work
+        print(f"△Over time: {over_time_in_work}")
+        return over_time_in_work.total_seconds()
 
     """
         @Return: float
@@ -280,7 +280,7 @@ class CalcTimeClass:
         """
 
     # リアル実働時間（労働時間 - 年休、出張、時間休など）
-    def get_real_time(self) -> timedelta:
+    def get_real_time(self) -> float:
         # 年休全日、出張全日なら00:00
         working_time = self.check_over_work()
         print(f"△Actual work time: {working_time}")
@@ -297,7 +297,7 @@ class CalcTimeClass:
                 if one_notification in self.n_time_off_list:
                     working_time -= self.get_times_rest(one_notification)
 
-        return working_time
+        return working_time.total_seconds()
 
     """
         看護師限定、休日出勤

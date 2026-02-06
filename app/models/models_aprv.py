@@ -12,7 +12,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 
-from .database_base import Base
+from app.database.database_base import Base
 
 
 class Approval(Base):

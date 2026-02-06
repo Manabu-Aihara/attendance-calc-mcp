@@ -12,7 +12,6 @@ RUN pip install poetry
 # poetryの定義ファイルをコピー (存在する場合)
 COPY pyproject.toml* poetry.lock* poetry.toml* /workdir/
 COPY app /workdir/app
-COPY main.py /workdir/main.py
 # poetryでライブラリをインストール (pyproject.tomlが既にある場合)
 # RUN poetry config virtualenvs.in-project true
 RUN if [ -f pyproject.toml ]; then poetry install --no-root; fi

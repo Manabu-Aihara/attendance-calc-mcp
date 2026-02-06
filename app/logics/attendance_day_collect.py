@@ -6,10 +6,10 @@ from datetime import timedelta
 
 from sqlalchemy.orm import Session
 
-from app.database_base import session
-from app.attendance_contract_query import ContractTimeAttendance
-from app.calc_work_classes_4_mcp import CalcTimeFactory
-from app.models import Attendance, Notification, Contract
+from app.database.database_base import session
+from app.database.attendance_contract_query import ContractTimeAttendance
+from app.caluculation.calc_work_classes_4_mcp import CalcTimeFactory
+from app.models.models import Attendance, Notification, Contract
 
 
 def convert_time(str_value):
@@ -31,9 +31,18 @@ def get_user_contract(contract_code: int, db_session: Session) -> str:
     return contract_query.NAME
 
 
+# 秒数を HH:MM に変換する処理を追加
+def format_rt(seconds):
+    if not seconds:
+        return "00:00"
+    h = int(seconds // 3600)
+    m = int((seconds % 3600) // 60)
+    return f"{h:03d}:{m:02d}" if seconds < 0 else f"{h:02d}:{m:02d}"
+
+
 def collect_attendance_data(
     staff_id: int, from_day: str, to_day: str, db_session: Session = session
-) -> Dict[int, Dict[str, Any]]:
+) -> Dict[Dict[str, int | str | float], Dict[int, Dict[str, Any]]]:
     """
     Collects attendance data from various sources and compiles it into a unified format.
     """
@@ -50,6 +59,19 @@ def collect_attendance_data(
     records = contract_attendance_query.all()
 
     calc_time_factory = CalcTimeFactory()
+
+    attendance_data["社員ID"] = staff_id
+    # 月途中の契約変更を想定しない場合、最初のレコードから取得
+    attendance_data["勤務形態"] = get_user_contract(
+        records[0].StaffJobContract.CONTRACT_CODE, db_session
+    )
+    if records[0].StaffHolidayContract is not None:
+        attendance_data["契約労働時間"] = records[0].StaffJobContract.PART_WORKTIME
+        attendance_data["契約有休時間"] = records[0].StaffHolidayContract.HOLIDAY_TIME
+    else:
+        attendance_data["契約労働時間"] = records[0].WORKTIME
+        attendance_data["契約有休時間"] = records[0].WORKTIME
+
     for record in records:
         attendance_obj: Attendance = record.Attendance
         print(f"Work Day: {attendance_obj.WORKDAY}, ID: {attendance_obj.id}")
@@ -58,7 +80,7 @@ def collect_attendance_data(
         # if work_day not in attendance_data:
         attendance_data[work_day] = {}
 
-        attendance_data[work_day]["社員ID"] = attendance_obj.STAFFID
+        attendance_data[work_day]["日付"] = attendance_obj.WORKDAY.day
         # オンコール
         attendance_data[work_day]["オンコール"] = attendance_obj.ONCALL
         # 開始時間
@@ -76,23 +98,23 @@ def collect_attendance_data(
         # 残業申請
         attendance_data[work_day]["残業申請"] = attendance_obj.OVERTIME
 
-        if record.StaffHolidayContract is None:
-            setting_contract_worktime = record.WORKTIME
-            setting_contract_off_time = record.WORKTIME
-        else:
-            setting_contract_worktime = record.StaffJobContract.PART_WORKTIME
-            setting_contract_off_time = record.StaffHolidayContract.HOLIDAY_TIME
+        # if record.StaffHolidayContract is None:
+        #     setting_contract_worktime = record.WORKTIME
+        #     setting_contract_off_time = record.WORKTIME
+        # else:
+        #     setting_contract_worktime = record.StaffJobContract.PART_WORKTIME
+        #     setting_contract_off_time = record.StaffHolidayContract.HOLIDAY_TIME
 
-        attendance_data[work_day]["勤務形態"] = get_user_contract(
-            record.StaffJobContract.CONTRACT_CODE, db_session
-        )
-        attendance_data[work_day]["契約労働時間"] = setting_contract_worktime
-        attendance_data[work_day]["契約有休時間"] = setting_contract_off_time
+        # attendance_data[work_day]["勤務形態"] = get_user_contract(
+        #     record.StaffJobContract.CONTRACT_CODE, db_session
+        # )
+        # attendance_data[work_day]["契約労働時間"] = setting_contract_worktime
+        # attendance_data[work_day]["契約有休時間"] = setting_contract_off_time
 
         calculation_instance = calc_time_factory.get_instance(staff_id=staff_id)
         calculation_instance.set_data(
-            contract_work_time=setting_contract_worktime,
-            contract_holiday_time=setting_contract_off_time,
+            contract_work_time=attendance_data["契約労働時間"],
+            contract_holiday_time=attendance_data["契約有休時間"],
             start_time=attendance_obj.STARTTIME,
             end_time=attendance_obj.ENDTIME,
             notifications=(attendance_obj.NOTIFICATION, attendance_obj.NOTIFICATION2),
@@ -128,21 +150,11 @@ def collect_attendance_data(
 
         # 実働時間(リアルタイム)
         real_time = calculation_instance.get_real_time()
-        real_time_str = (
-            re.sub(r"([0-9]{1,2}):([0-9]{2}):00", r"\1:\2", f"{real_time}")
-            if real_time > timedelta(hours=0)
-            else "0.0"
-        )
-        attendance_data[work_day]["リアル実働時間"] = real_time_str
+        attendance_data[work_day]["リアル実働時間"] = format_rt(real_time)
 
         # 残業時間
         over_work_time = calculation_instance.get_over_time()
-        over_work_time_str = (
-            re.sub(r"([0-9]{1,2}):([0-9]{2}):00", r"\1:\2", f"{over_work_time}")
-            if over_work_time > timedelta(hours=0)
-            else "0.0"
-        )
-        attendance_data[work_day]["時間外"] = over_work_time_str
+        attendance_data[work_day]["時間外"] = format_rt(over_work_time)
 
         # 備考
         attendance_data[work_day]["備考"] = attendance_obj.REMARK

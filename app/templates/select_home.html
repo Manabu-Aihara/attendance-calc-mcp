@@ -17,14 +17,24 @@
             <li><a href="prompt/mcp_prompt.html">MCP prompt for attendance</a></li>
         </ul>
     </div> -->
-    <form method="get" action="csv-diff">
-        CSV file comparison
-        <input type="submit" name="uuid" value="{{ uuid }}">
-    </form>
-    <form method="get" action="get-attendance">
-        MCP prompt for attendance
-        <input type="submit" name="uuid" value="{{ uuid }}">
-    </form>
+    <div>
+        <form method="get" action="csv-diff">
+            <input type="hidden" name="uuid" value="{{ uuid }}">
+            <input type="submit" value="CSV file comparison">
+        </form>
+        <form method="post" action="make-attendance-list">
+            <input type="hidden" name="uuid" value="{{ uuid }}">
+            <input type="text" name="staff_id" required>
+            <input type="month" name="target_month" required>
+            <input type="submit" value="Fetch attendance list">
+        </form>
+        <form method="post" action="chat-with-ai">
+            <input type="hidden" name="uuid" value="{{ uuid }}">
+            <input type="text" name="staff_id" required>
+            <input type="month" name="target_month" required>
+            <input type="submit" value="Analyze attendance">
+        </form>
+    </div>
 </body>
 
 </html>

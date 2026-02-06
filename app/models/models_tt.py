@@ -8,7 +8,7 @@ from sqlalchemy import (
     Date,
 )
 
-from .database_base import Base
+from app.database.database_base import Base
 
 # ImportError: cannot import name 'Team' from partially initialized module
 # 'app.Bases' (most likely due to a circular import)

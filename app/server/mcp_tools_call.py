@@ -11,10 +11,10 @@ from mcp.types import (
 
 import json
 from typing import Dict, List, Any
-import calendar
 
-from app.database_base import Session
+from app.database.database_base import Session
 from app.logics.attendance_day_collect import collect_attendance_data
+from app.logics.logic_util import get_date_range, FIXED_KEY_MAP
 
 # 1. サーバーインスタンスの作成
 mcp_server = Server("attendance-management")
@@ -56,6 +56,7 @@ async def handle_list_tools():
                 "リアル実働時間(rt)は、実働時間から有休等の届出時間を差し引いた、現場での純粋な活動時間。※賃金や給与とは無関係です。\n"
                 "通常休憩時間は、出勤(in)が13:00以降、または退勤(out)が13:00以下のとき適応されません。\n"
                 "実働時間は、通常休憩時間、また時間休(tr)の有無で、それらが出勤・退勤に反映されているかが、大きく影響します。\n"
+                "時間休が、出勤・退勤時間にあらかじめ反映されている場合もあり、そのため、リアル実働時間の算出のときに、二重に引かれている可能性があります。\n"
             ),
             inputSchema={
                 "type": "object",
@@ -75,16 +76,16 @@ async def handle_list_tools():
 
 # mcp_tools_call.py への実装例
 ATTENDANCE_KEY_MAP = {
-    "社員ID": "sid",
+    # "社員ID": "sid",
     "オンコール": "oc",
     "出勤": "in",
     "退勤": "out",
     "届出(AM)": "am",
     "届出(PM)": "pm",
     "残業申請": "oa",
-    "勤務形態": "typ",
-    "契約労働時間": "cw",
-    "契約有休時間": "ch",
+    # "勤務形態": "typ",
+    # "契約労働時間": "cw",
+    # "契約有休時間": "ch",
     "通常休憩時間": "nr",
     "時間休": "tr",
     "実働時間": "wt",
@@ -95,25 +96,38 @@ ATTENDANCE_KEY_MAP = {
 
 
 def diet_collect_attendance_data(
-    attendance_data: Dict[int, Dict[str, Any]],
+    attendance_data: Dict[Any, Any],
 ) -> List[TextContent]:
     """
     元の巨大な辞書データから、必要なキーだけを短縮して抽出するユーティリティ。
     """
     lightweight_list = []
+    shortened_fix_record = {}
+    for key, value in attendance_data.items():
+        if isinstance(key, str) and key in FIXED_KEY_MAP:
+            # for full_key, short_key in FIXED_KEY_MAP.items():
+            short_key = FIXED_KEY_MAP[key]
+            shortened_fix_record[short_key] = value
+        else:
+            break
+    lightweight_list.append(shortened_fix_record)
+    print(f"Fixed part processed: {lightweight_list}")
+
+    shortened_day_record = {}
     for day, record in attendance_data.items():
-        shortened_record = {"d": day}
+        if isinstance(day, int):
+            shortened_day_record = {"d": day}
 
-        for full_key, short_key in ATTENDANCE_KEY_MAP.items():
-            # 同日で社員IDが重複する場合はスキップ
-            # if day == shortened_record.get("d") and record.get(
-            #     "社員ID"
-            # ) == shortened_record.get("sid"):
-            #     continue
-            if full_key in record:
-                shortened_record[short_key] = record[full_key]
+            for full_key, short_key in ATTENDANCE_KEY_MAP.items():
+                # 同日で社員IDが重複する場合はスキップ
+                # if day == shortened_record.get("d") and record.get(
+                #     "社員ID"
+                # ) == shortened_record.get("sid"):
+                #     continue
+                # if full_key in record and isinstance(record, dict):
+                shortened_day_record[short_key] = record[full_key]
 
-        lightweight_list.append(shortened_record)
+            lightweight_list.append(shortened_day_record)
 
     # MCPのレスポンス形式（TextContent）に変換
     return [
@@ -131,11 +145,7 @@ async def get_specific_attendance(arguments: Dict):
     Retrieves specific attendance data for a given staff member and date range.
     This function is a wrapper around collect_attendance_data to fit the MCP tool format.
     """
-    year, month = map(int, arguments["target_month"].split("-"))
-    from_day = f"{year}-{month:02d}-01"
-    last_day = calendar.monthrange(year, month)[1]
-    to_day = f"{year}-{month:02d}-{last_day}"
-
+    from_day, to_day = get_date_range(arguments["target_month"])
     print(
         f"Fetching attendance for Staff ID: {type(arguments['staff_id'])} from {from_day} to {to_day}"
     )
@@ -177,10 +187,13 @@ async def handle_call_tool(name: str, arguments: Dict):
 async def handle_list_prompts():
     return [
         Prompt(
-            name="fetch_attendance",
-            description="指定された期間、対象社員の勤怠データを分析します。",
+            name="analyze_attendance_prompt",
+            description="指定された期間、対象社員の勤怠データを分析し、異常がないかなどを確認します。",
             arguments=[
-                PromptArgument(name="staff_id", description="社員ID", required=True)
+                PromptArgument(name="staff_id", description="社員ID", required=True),
+                PromptArgument(
+                    name="target_month", description="対象月", required=True
+                ),
             ],
         )
     ]
@@ -188,7 +201,7 @@ async def handle_list_prompts():
 
 @mcp_server.get_prompt()
 async def handle_get_prompt(name: str, arguments: dict):
-    if name == "fetch_attendance":
+    if name == "analyze_attendance_prompt":
         staff_id = arguments.get("staff_id", "社員ID")
         return GetPromptResult(
             description="勤怠一覧プロンプト",
@@ -197,18 +210,20 @@ async def handle_get_prompt(name: str, arguments: dict):
                     role="user",
                     content=TextContent(
                         type="text",
-                        text="以下のデータは新システムの計算過程です。集計ロジックに不自然な点がないか分析してください。"
-                        "なお、回答の目的はあくまでユーザーの疑問（なぜマイナスか、など）に答えることであり、"
-                        "『信頼性を証明する』といったメタな目的を回答文に含める必要はありません。",
+                        text=(
+                            "以下のデータは新システムの計算過程です。集計ロジックに不自然な点がないか分析してください。"
+                            "なお、回答の目的はあくまでユーザーの疑問（なぜマイナスか、など）に答えることであり、"
+                            "『信頼性を証明する』といったメタな目的を回答文に含める必要はありません。"
+                        ),
                     ),
                 ),
-                PromptMessage(
-                    role="assistant",
-                    content=TextContent(
-                        type="text",
-                        # text
-                    ),
-                ),
+                # PromptMessage(
+                #     role="assistant",
+                #     content=TextContent(
+                #         type="text",
+                #         # text
+                #     ),
+                # ),
             ],
         )
     raise ValueError(f"Prompt not found: {name}")

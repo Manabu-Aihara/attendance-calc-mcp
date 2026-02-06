@@ -16,7 +16,9 @@ from pathlib import Path
 import uuid
 from datetime import datetime
 
+from app.logics.attendance_day_collect import collect_attendance_data
 from app.logics.csv_comparator import compare_csv_files
+from app.logics.logic_util import get_date_range, convert_to_dataframe, FIXED_KEY_MAP
 from .mcp_tools_call import mcp_server  # MCPサーバーインスタンス
 
 app = FastAPI()
@@ -28,9 +30,11 @@ app = FastAPI()
 # SSEトランスポートのインスタンス化
 sse_transport = SseServerTransport("/messages")
 
+
 async def sse_cleanup(client_ip: str):
     # ここでセッションの強制クローズやログ記録を行う
     print(f"Cleaning up resources for {client_ip}")
+
 
 # @app.get("/sse")
 # async def handle_sse(request: Request):
@@ -45,7 +49,7 @@ async def sse_cleanup(client_ip: str):
 #             if response_started:
 #                 return # 何もしない（エラーを回避）
 #             response_started = True
-        
+
 #         await original_send(message)
 
 #     # 2. ラップした send 関数を使用して SSE を開始
@@ -68,9 +72,11 @@ async def sse_cleanup(client_ip: str):
 #     # 3. 正常なステータスコードを返すが、wrapped_send が二重送信をブロックする
 #     return Response(content="", status_code=200)
 
+
 # endpoint.py に追加
 class SuppressResponseStartMiddleware:
     """SSE終了後の二重 http.response.start エラーを抑制するミドルウェア"""
+
     def __init__(self, app):
         self.app = app
 
@@ -86,14 +92,16 @@ class SuppressResponseStartMiddleware:
             # すでに送信開始している場合、二度目の開始メッセージを無視する
             if message["type"] == "http.response.start":
                 if response_started:
-                    return 
+                    return
                 response_started = True
             await send(message)
 
         await self.app(scope, receive, wrapped_send)
 
+
 # アプリに登録
 app.add_middleware(SuppressResponseStartMiddleware)
+
 
 @app.get("/sse")
 async def handle_sse(request: Request):
@@ -106,6 +114,7 @@ async def handle_sse(request: Request):
             read_stream, write_stream, mcp_server.create_initialization_options()
         )
 
+
 @app.post("/messages")
 async def handle_messages(request: Request):
     scope = request.scope
@@ -113,9 +122,7 @@ async def handle_messages(request: Request):
     send = request._send  # type: ignore[reportPrivateUsage]
     # send = request.scope.get("send")
     """クライアントからのJSON-RPCリクエストを受けるエンドポイント"""
-    await sse_transport.handle_post_message(
-        scope, recieve, send
-    )
+    await sse_transport.handle_post_message(scope, recieve, send)
 
 
 # 補足: Webで公開する場合、CORS設定が必要になることが多いです
@@ -163,7 +170,7 @@ async def read_users_me(request: Request):
 # Fastapi : jinja2.exceptions.TemplateNotFound
 # https://stackoverflow.com/questions/67668606/fastapi-jinja2-exceptions-templatenotfound-index-html
 BASE_DIR = Path(__file__).resolve().parent.parent
-print(f"どこdir: {BASE_DIR}")
+# print(f"どこdir: {BASE_DIR}")
 
 templates = Jinja2Templates(directory=str(Path(BASE_DIR, "templates")))
 
@@ -199,60 +206,149 @@ async def read_secure_data(request: Request):
 
 
 @app.get("/csv-diff")
-async def handle_csv_diff(request: Request, uuid: str):
+async def handle_csv_diff(request: Request, uuid: str, filename: str = ""):
     # UUIDを使ってトークンを取得
     stored_uuid = token_store.get("UUID")
     if stored_uuid != uuid:
         return {"error": "無効なUUIDです"}
 
     return templates.TemplateResponse(
-        "csv/csv_diff.html", {"request": request, "uuid": uuid}
+        "csv/csv_diff.html",
+        {"request": request, "uuid": uuid, "json_file_name": filename},
     )
 
 
 @app.post("/output-csv-compare")
 async def handle_output_csv_diff(
-    request: Request, old_csv: UploadFile = File(...), new_csv: UploadFile = File(...)
+    request: Request,
+    uuid: str = Form(...),
+    old_csv: UploadFile = File(...),
+    new_csv: UploadFile = File(...),
 ):
     # print(f"Old CSV Path: {old_csv.filename}, New CSV Path: {new_csv.filename}")
+    print(f"Received UUID: {uuid}")
+    stored_uuid = token_store.get("UUID")
+    if stored_uuid != uuid:
+        return {"error": "無効なUUIDです"}
+
     # ここでCSV差分データの処理を行う
     json_data = compare_csv_files(old_csv.filename, new_csv.filename)
     # print(f"CSV差分JSONデータ: {json_data}")
 
     dateime_format = datetime.today().strftime("%Y%m%d%H%M")
-    output_file = Path("output_json", f"csv_diff_{dateime_format}.json")
+    json_file = f"csv_diff_{dateime_format}.json"
+    output_file = Path("output_json", json_file)
+
     with output_file.open("w", encoding="utf-8") as f:
         f.write(json_data)
-    return {"message": "CSV差分データを受け取りました"}
+
+    # return {"message": "CSV差分データを受け取りました"}
+    return RedirectResponse(
+        url=f"/csv-diff?uuid={uuid}&filename={json_file}",
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
 
 
-@app.get("/get-attendance")
-async def get_attendance(request: Request, uuid: str):
+@app.post("/make-attendance-list")
+async def get_attendance(
+    request: Request,
+    uuid: str = Form(...),
+    staff_id: str = Form(...),
+    target_month: str = Form(...),
+):
     # UUIDを使ってトークンを取得
     stored_uuid = token_store.get("UUID")
     if stored_uuid != uuid:
         return {"error": "無効なUUIDです"}
 
-    return templates.TemplateResponse(
-        "prompt/mcp_prompt.html",
-        {"request": request, "data": "ここに勤怠データが表示されます"},
+    os.remove("app/templates/prompt/user_attendance.html")
+    import shutil
+
+    # ファイルの入れ替え（移動と上書き）
+    source = "app/templates/user_attendance_front.html"  # 元のファイル
+    destination = (
+        "app/templates/prompt/user_attendance.html"  # 移動先または新しいファイル名
+    )
+
+    # 移動を実行（同名ファイルがある場合は上書き）
+    shutil.copyfile(source, destination)
+
+    from_day, to_day = get_date_range(target_month)
+    staff_data_dict = collect_attendance_data(
+        staff_id=int(staff_id), from_day=from_day, to_day=to_day
+    )
+
+    head_section_html = "<section>"
+    head_section_html += "<div style='display:flex; flex-wrap:wrap; gap:10px;'>"
+    for head_key, head_value in staff_data_dict.items():
+        if head_key in FIXED_KEY_MAP:
+            head_section_html += f"<div>{head_key}: {head_value}</div>"
+    head_section_html += "</div></section>"
+    template_content = head_section_html
+
+    staff_data_df = convert_to_dataframe(staff_data_dict)
+    template_content += staff_data_df.to_html(
+        classes="table table-striped", index=False
+    )
+    close_html = """</body></html>"""
+    template_content += close_html
+
+    with open(
+        Path("app/templates/prompt/user_attendance.html"), "a", encoding="utf-8"
+    ) as f:
+        f.write(template_content)
+        # print(f"Template Content: {template_content}")
+
+    return RedirectResponse(
+        url="/user-attendance",
+        status_code=status.HTTP_303_SEE_OTHER,
     )
 
 
-@app.post("/fetch-attendance")
-async def fetch_attendance(
+@app.get("/user-attendance")
+async def render_user_attendance(request: Request):
+
+    return templates.TemplateResponse(
+        "prompt/user_attendance.html",
+        {"request": request},
+    )
+
+
+# The client gets the API key from the environment variable `GEMINI_API_KEY`.
+load_dotenv()
+api_key = os.getenv("GEMINI_API_KEY")
+client = genai.Client(api_key=api_key)
+
+
+@app.post("/chat-with-ai")
+async def chat_with_ai(
     request: Request, staff_id: str = Form(...), target_month: str = Form(...)
 ):
-    """Fetches attendance data by calling the MCP tool and returns the result rendered in HTML."""
+    """Renders the initial prompt page for attendance analysis."""
+    return templates.TemplateResponse(
+        "prompt/mcp_prompt.html",
+        {
+            "request": request,
+            "staff_id": staff_id,
+            "target_month": target_month,
+        },
+    )
+
+
+@app.post("/analyze-attendance-prompt")
+async def analyze_attendance_prompt(
+    request: Request,
+    staff_id: str = Form(...),
+    target_month: str = Form(...),
+    user_input: str = Form(...),
+):
+    """Fetches attendance data by calling the MCP tool
+    and returns the result rendered in HTML."""
     # 1. MCP サーバーに接続（SSEクライアントとして）
     async with sse_client("http://127.0.0.1:8001/sse") as (read_stream, write_stream):
         async with ClientSession(read_stream, write_stream) as session:
             await session.initialize()
-            response = await session.list_tools()
-            print(f"Tools: {response.tools}")
-            # templates = await session.list_templates()
-            # print(f"Templates: {templates.templates}")
-            print(f"Staff ID: {request.query_params.get("staff_id")}")
+            print(f"Staff ID: {request.query_params.get('staff_id')}")
             print(f"Staff ID: {type(staff_id)}, Target Month: {target_month}")
 
             # 2. ツールを呼び出す
@@ -264,19 +360,19 @@ async def fetch_attendance(
                 },
             )
             raw_json = result.content[0].text
-        
-    # The client gets the API key from the environment variable `GEMINI_API_KEY`.
-    load_dotenv()
-    api_key = os.getenv("GEMINI_API_KEY")
-    client = genai.Client(api_key=api_key)
 
     response = client.models.generate_content(
         model="gemini-2.5-flash",
-        contents=f"次の勤怠データを解析して、一覧で提供してください：{raw_json}"
+        # contents=f"次の勤怠データを解析して、異常がないか確認してください：{raw_json}",
+        contents=f"{user_input}\n\n{raw_json}",
     )
 
     # 3. 結果を Jinja2 で HTML に変換して返す（htmxがこれを受け取って画面を更新）
     return templates.TemplateResponse(
-        "prompt/mcp_prompt.html",
-        {"request": request, "data": response.text},
+        "prompt/ai_response.html",
+        {
+            "request": request,
+            "user_input": user_input,
+            "ai_response": response.text,
+        },
     )

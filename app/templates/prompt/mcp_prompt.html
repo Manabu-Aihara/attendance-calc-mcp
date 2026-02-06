@@ -13,21 +13,39 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://unpkg.com/htmx.org@2.0.8/dist/htmx.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // 追加されたメッセージを自動でMarkdownパースする
+        document.body.addEventListener('htmx:afterSettle', function (evt) {
+            const contents = evt.detail.elt.querySelectorAll('.markdown-content');
+            contents.forEach(el => {
+                if (!el.dataset.parsed) {
+                    el.innerHTML = marked.parse(el.textContent);
+                    el.dataset.parsed = "true";
+                }
+            });
+        });
+    </script>
     <title>Conversation page</title>
 </head>
 </head>
 
 <body>
     <h1>MCP prompt for attendance</h1>
-    <p>{{ uuid }}</p>
-    <p>{{ data }}</p>
-    <form method="post" hx-post="/fetch-attendance" enctype="multipart/form-data" hx-target="#result">
-        <input type="text" name="staff_id">
-        <input type="month" name="target_month">
-        <input type="submit" value="submit">
-        <!-- <textarea name="talk"></textarea> -->
+
+    <div id="chat-history" class="p-4 border overflow-y-auto markdown-content" style="height: 400px;">
+        <div></div>
+    </div>
+
+    <form hx-post="/analyze-attendance-prompt" hx-trigger="submit" hx-method="post" hx-target="#chat-history"
+        hx-swap="beforeend" hx-on::after-request="this.reset()">
+        <input type="hidden" name="staff_id" value="{{ staff_id }}">
+        <input type="hidden" name="target_month" value="{{ target_month }}">
+        <textarea name="user_input" class="w-full" placeholder="例：3日のマイナス理由を教えて"></textarea>
+        <button type="submit">送信</button>
     </form>
-    <div id="result"></div>
+
 </body>
 
 </html>

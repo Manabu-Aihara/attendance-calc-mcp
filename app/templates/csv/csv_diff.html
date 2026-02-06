@@ -4,18 +4,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Select page</title>
+    <title>CSV data comparison page</title>
 </head>
 </head>
+<style>
+    .dl-button {
+        display: inline-block;
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+    }
+</style>
 
 <body>
     <h1>CSV file comparison</h1>
-    <p>{{ uuid }}</p>
     <form method="post" action="output-csv-compare" enctype="multipart/form-data">
         <input name="old_csv" type="file">
         <input name="new_csv" type="file">
+        <input type="hidden" name="uuid" value="{{ uuid }}">
         <input type="submit" value="submit">
     </form>
+    {% if json_file_name != "" %}
+    JSON file name: <p>{{ json_file_name }}</p>
+    <a href="../../../output_json/{{ json_file_name }}" download="{{ json_file_name }}" class="dl-button">Download
+        JSON file</a>
+    {% endif %}
 </body>
 
 </html>
