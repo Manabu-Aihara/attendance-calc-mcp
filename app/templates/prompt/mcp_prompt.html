@@ -32,10 +32,13 @@
 </head>
 
 <body>
-    <h1>MCP prompt for attendance</h1>
-
-    <div id="chat-history" class="p-4 border overflow-y-auto markdown-content" style="height: 400px;">
-        <div></div>
+    <h1>Conversation page</h1>
+    <h2>User attendance list</h2>
+    {# 【Jinja】Includeブロック内で変数を展開する #}
+    {# https://sagaziiin.hatenablog.com/entry/2023/02/28/215930 #}
+    {% include "%s" % list_table %}
+    <h2>MCP prompt for attendance</h2>
+    <div id="chat-history" class="min-h-[15rem] p-4 border overflow-y-auto markdown-content">
     </div>
 
     <form hx-post="/analyze-attendance-prompt" hx-trigger="submit" hx-method="post" hx-target="#chat-history"

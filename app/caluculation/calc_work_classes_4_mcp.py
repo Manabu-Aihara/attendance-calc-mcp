@@ -263,7 +263,7 @@ class CalcTimeClass:
     def get_over_time(self) -> float:
         # self.overtime_check == "1" が前提
         if self.overtime_check == "0":
-            return timedelta(0)
+            return 0.0
 
         input_work_time = self.check_over_work()
         for one_notification in self.notifications:
@@ -271,7 +271,7 @@ class CalcTimeClass:
                 over_time_in_work = input_work_time - self.contract_work_time / 2
             else:
                 over_time_in_work = input_work_time - self.contract_work_time
-        print(f"△Over time: {over_time_in_work}")
+        print(f"△Over time: {over_time_in_work.total_seconds()}")
         return over_time_in_work.total_seconds()
 
     """
