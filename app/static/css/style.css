@@ -1,0 +1,110 @@
+#h1-title {
+  display: none;
+}
+
+.csv-wrap {
+  margin: 3%;
+}
+.csv-wrap div form .csv-button {
+  padding: 10px 20px;
+  background-color: #dfdada;
+  color: darkslateblue;
+  font-weight: bold;
+  text-decoration: none;
+  border-radius: 5px;
+}
+
+.diff-upload-wrap {
+  margin: 3%;
+}
+.diff-upload-wrap p {
+  margin: 2rem 0;
+}
+.diff-upload-wrap .upload-button {
+  width: -moz-fit-content;
+  width: fit-content;
+  padding: 1rem 2rem;
+  background-color: orange;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.diff-upload-wrap .upload-button input {
+  display: none;
+}
+
+.diff-output-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  align-items: center;
+}
+.diff-output-wrap #json-diff {
+  height: 15rem;
+  overflow-y: auto;
+}
+.diff-output-wrap #json-diff details summary {
+  all: revert;
+  display: list-item;
+}
+.diff-output-wrap #json-diff details pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  background-color: #F0F9F4;
+  padding: 10px;
+  border-radius: 4px;
+  font-size: 16px;
+}
+.diff-output-wrap .select-attendance {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.diff-output-wrap .select-attendance div form input {
+  display: block;
+  padding: 10px;
+}
+.diff-output-wrap .select-attendance div form .chat-button {
+  padding: 10px 20px;
+  background-color: #5f5858;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+}
+
+.csv-upload {
+  margin: 3%;
+}
+.csv-upload .csv-button {
+  width: -moz-fit-content;
+  width: fit-content;
+  padding: 0 2rem;
+  background-color: olivedrab;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.csv-upload .csv-button input {
+  display: none;
+}
+
+.json-button {
+  padding: 10px 20px;
+  background-color: darkcyan;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+  margin: 0 3%;
+}
+
+.dl-button {
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+  margin-left: 4%;
+}/*# sourceMappingURL=style.css.map */

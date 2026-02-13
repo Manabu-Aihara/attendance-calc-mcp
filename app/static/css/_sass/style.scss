@@ -1,0 +1,129 @@
+@charset 'utf-8';
+
+#h1-title {
+    display: none;
+}
+
+// select_home.html
+.csv-wrap {
+    margin: 3%;
+
+    div form .csv-button {
+        padding: 10px 20px;
+        background-color: #dfdada;
+        color: darkslateblue;
+        font-weight: bold;
+        text-decoration: none;
+        border-radius: 5px;
+    }
+}
+
+.diff-upload-wrap {
+    margin: 3%;
+
+    p {
+        margin: 2rem 0;
+    }
+
+    .upload-button {
+        width: fit-content;
+        padding: 1rem 2rem;
+        background-color: orange;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        cursor: pointer;
+
+        input {
+            display: none;
+        }
+    }
+}
+
+.diff-output-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    align-items: center;
+
+    #json-diff {
+        height: 15rem;
+        overflow-y: auto;
+
+        details {
+            summary {
+                // 「all: unsetでスタイルがリセットされない」場合の解決策
+                all: revert;
+                display: list-item;
+            }
+
+            pre {
+                white-space: pre-wrap;
+                word-wrap: break-word;
+                background-color: #F0F9F4;
+                padding: 10px;
+                border-radius: 4px;
+                font-size: 16px;
+            }
+        }
+    }
+
+    .select-attendance {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        // position: fixed;
+
+        div form input {
+            display: block;
+            padding: 10px;
+        }
+
+        div form .chat-button {
+            padding: 10px 20px;
+            background-color: #5f5858;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+    }
+
+}
+
+// csv_diff.html
+.csv-upload {
+    margin: 3%;
+
+    .csv-button {
+        width: fit-content;
+        padding: 0 2rem;
+        background-color: olivedrab;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        cursor: pointer;
+
+        input {
+            display: none;
+        }
+    }
+}
+
+.json-button {
+    padding: 10px 20px;
+    background-color: darkcyan;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    margin: 0 3%;
+}
+
+.dl-button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    margin-left: 4%;
+}

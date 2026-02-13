@@ -2,29 +2,29 @@
 <html lang="ja">
 
 <head>
-    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/event-stream" charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CSV data comparison page</title>
+    <link rel="stylesheet" href="static/css/reset.css">
+    <link rel="stylesheet" href="static/css/style.css">
+    <title>CSV file comparison</title>
+
 </head>
-</head>
-<style>
-    .dl-button {
-        display: inline-block;
-        padding: 10px 20px;
-        background-color: #007bff;
-        color: white;
-        text-decoration: none;
-        border-radius: 5px;
-    }
-</style>
+
+{% block content %}
 
 <body>
-    <h1>CSV file comparison</h1>
+    <h1 id="h1-title">CSV file comparison</h1>
     <form method="post" action="output-csv-compare" enctype="multipart/form-data">
-        <input name="old_csv" type="file">
-        <input name="new_csv" type="file">
+        <div class="csv-upload">
+            <p><strong>現システム</strong>のCSVファイルをアップロードしてください</p>
+            <label for="old_csv" class="csv-button">CSV file<input name="old_csv" type="file" id="old_csv"></label>
+        </div>
+        <div class="csv-upload">
+            <p><strong>テスト環境システム</strong>のCSVファイルをアップロードしてください</p>
+            <label for="new_csv" class="csv-button">CSV file<input name="new_csv" type="file" id="new_csv"></label>
+        </div>
         <input type="hidden" name="uuid" value="{{ uuid }}">
-        <input type="submit" value="submit">
+        <input type="submit" value="差分ファイル生成" class="json-button">
     </form>
     {% if json_file_name != "" %}
     JSON file name: <p>{{ json_file_name }}</p>
@@ -34,3 +34,4 @@
 </body>
 
 </html>
+{% endblock %}

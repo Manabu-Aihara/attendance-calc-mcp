@@ -1,5 +1,5 @@
 import json
-import time
+import math
 from typing import Dict, Any
 import re
 from datetime import timedelta
@@ -24,6 +24,8 @@ def get_notification_name(notification_code: str, db_session: Session) -> str:
     if notification_code != "":
         notification_query = db_session.get(Notification, notification_code)
         return notification_query.NAME
+    else:
+        return ""
 
 
 def get_user_contract(contract_code: int, db_session: Session) -> str:
@@ -32,11 +34,15 @@ def get_user_contract(contract_code: int, db_session: Session) -> str:
 
 
 # 秒数を HH:MM に変換する処理を追加
-def format_rt(seconds):
-    if not seconds:
+def format_rt(seconds: float) -> str:
+    if seconds == 0.0:
         return "00:00"
-    h = int(seconds // 3600)
-    m = int((seconds % 3600) // 60)
+    # //演算子は負の無限大方向に丸める（(-2.5 -> -3)）ため、切り上げには適しません。
+    h = math.ceil(seconds / 3600) if seconds < 0 else int(seconds // 3600)
+    # 演算子の結合順序について、Python では % より単項のマイナス - の方が優先度が高いので、たとえば -7 % 2 は (-7) % 2 と解釈されます。
+    print(f"seconds % 3600 // 60: {(-seconds % 3600) // 60}")
+    m = int((-seconds % 3600) // 60) if seconds < 0 else int((seconds % 3600) // 60)
+    # print(f"h: {h}, m: {m}")
     return f"{h:03d}:{m:02d}" if seconds < 0 else f"{h:02d}:{m:02d}"
 
 
@@ -154,6 +160,7 @@ def collect_attendance_data(
 
         # 残業時間
         over_work_time = calculation_instance.get_over_time()
+        print(f"Over time (seconds): {over_work_time}")
         attendance_data[work_day]["時間外"] = format_rt(over_work_time)
 
         # 備考

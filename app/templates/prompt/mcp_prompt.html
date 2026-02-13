@@ -2,19 +2,14 @@
 <html lang="ja">
 
 <head>
-    <!-- <meta charset="UTF-8"> -->
-    <!--
-    Source - https://stackoverflow.com/a
-    Posted by Ry-
-    Retrieved 2026-01-27, License - CC BY-SA 4.0
-    -->
-
     <meta http-equiv="Content-Type" content="text/event-stream" charset="utf-8" />
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="static/css/reset.css">
+    <link rel="stylesheet" href="static/css/style.css">
     <script src="https://unpkg.com/htmx.org@2.0.8/dist/htmx.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script> -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
         // 追加されたメッセージを自動でMarkdownパースする
         document.body.addEventListener('htmx:afterSettle', function (evt) {
@@ -29,23 +24,44 @@
     </script>
     <title>Conversation page</title>
 </head>
-</head>
+
+{% block content %}
 
 <body>
-    <h1>MCP prompt for attendance</h1>
-
-    <div id="chat-history" class="p-4 border overflow-y-auto markdown-content" style="height: 400px;">
-        <div></div>
+    <h1 class="hidden">Conversation page</h1>
+    <h2 class="text-2xl font-bold text-gray-800 mb-4">ID{{ staff_id }}さんの{{ target_month }}月勤怠リスト</h2>
+    {# 【Jinja】Includeブロック内で変数を展開する #}
+    {# https://sagaziiin.hatenablog.com/entry/2023/02/28/215930 #}
+    {% include "%s" % list_table %}
+    <h2 class="text-2xl font-bold text-gray-800 mb-4">勤怠リストに関する質問</h2>
+    <p class="text-base font-semibold">※ 対話は往復5回までです。</p>
+    <div id="chat-history" class="min-h-[10rem] p-4 border overflow-y-auto markdown-content">
     </div>
 
-    <form hx-post="/analyze-attendance-prompt" hx-trigger="submit" hx-method="post" hx-target="#chat-history"
-        hx-swap="beforeend" hx-on::after-request="this.reset()">
-        <input type="hidden" name="staff_id" value="{{ staff_id }}">
-        <input type="hidden" name="target_month" value="{{ target_month }}">
-        <textarea name="user_input" class="w-full" placeholder="例：3日のマイナス理由を教えて"></textarea>
-        <button type="submit">送信</button>
-    </form>
-
+    <div class="m-[2%]">
+        <form hx-post="/analyze-attendance-prompt" hx-trigger="submit" hx-method="post" hx-target="#chat-history"
+            hx-swap="beforeend" hx-on::after-request="this.reset()">
+            <input type="hidden" name="staff_id" value="{{ staff_id }}">
+            <input type="hidden" name="target_month" value="{{ target_month }}">
+            <textarea name="user_input" class="w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none"
+                rows="4" placeholder="例：3日のマイナス理由を教えて"></textarea>
+            <button type="submit" id="request-button"
+                class="px-4 py-2 font-semibold text-white bg-red-600 rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75">送信</button>
+        </form>
+    </div>
+    <div id="request-count" class="hidden">0</div>
+    <script>
+        const requestBtn = document.getElementById('request-button');
+        const requestCount = document.getElementById('request-count');
+        requestBtn.addEventListener('click', function () {
+            const count = parseInt(requestCount.textContent);
+            requestCount.textContent = count + 1;
+        });
+        if (requestCount.textContent == 5) {
+            requestBtn.disabled = true;
+        }
+    </script>
 </body>
 
 </html>
+{% endblock %}

@@ -1,8 +1,10 @@
 from fastapi import FastAPI, Request, status, UploadFile, File, Form, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.responses import Response
+from starlette.middleware.base import BaseHTTPMiddleware
 from mcp.server.sse import SseServerTransport
 from mcp import ClientSession
 from mcp.client.sse import sse_client
@@ -74,6 +76,7 @@ async def sse_cleanup(client_ip: str):
 
 
 # endpoint.py に追加
+# 以前提供してくれたもの
 class SuppressResponseStartMiddleware:
     """SSE終了後の二重 http.response.start エラーを抑制するミドルウェア"""
 
@@ -99,8 +102,18 @@ class SuppressResponseStartMiddleware:
         await self.app(scope, receive, wrapped_send)
 
 
+class CustomMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        # 1. 前処理
+        response = await call_next(request)
+        # 2. 戻り値が正しいか確認
+        return response
+
+
 # アプリに登録
-app.add_middleware(SuppressResponseStartMiddleware)
+# ミドルウェアの登録（順番も重要です）
+app.add_middleware(SuppressResponseStartMiddleware)  # ← これを追加
+app.add_middleware(CustomMiddleware)
 
 
 @app.get("/sse")
@@ -173,6 +186,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # print(f"どこdir: {BASE_DIR}")
 
 templates = Jinja2Templates(directory=str(Path(BASE_DIR, "templates")))
+app.mount(
+    path="/static",
+    app=StaticFiles(directory=str(Path(BASE_DIR, "static"))),
+    name="static",
+)
 
 
 @app.get("/read-secure")
@@ -278,29 +296,41 @@ async def get_attendance(
         staff_id=int(staff_id), from_day=from_day, to_day=to_day
     )
 
-    head_section_html = "<section>"
-    head_section_html += "<div style='display:flex; flex-wrap:wrap; gap:10px;'>"
+    head_section_html = "<section><div class='flex gap-10 p-4 bg-purple-200 mb-4'>"
     for head_key, head_value in staff_data_dict.items():
         if head_key in FIXED_KEY_MAP:
             head_section_html += f"<div>{head_key}: {head_value}</div>"
     head_section_html += "</div></section>"
     template_content = head_section_html
 
+    table_wrap = "<div class='w-[80%] mx-auto border-2 table-wrap overflow-y-auto'>"
+    template_content += table_wrap
+
     staff_data_df = convert_to_dataframe(staff_data_dict)
     template_content += staff_data_df.to_html(
         classes="table table-striped", index=False
     )
-    close_html = """</body></html>"""
-    template_content += close_html
+    close_table = "</div>"
+    template_content += close_table
+    # print(f"Template Content: {template_content}")
+    # close_html = """</body></html>"""
+    # template_content += close_html
+
+    # with open(
+    #     Path("app/templates/prompt/user_attendance.html"), "a", encoding="utf-8"
+    # ) as f:
+    #     f.write(template_content)
 
     with open(
-        Path("app/templates/prompt/user_attendance.html"), "a", encoding="utf-8"
+        Path("app/templates/prompt/user_attendance.html"),
+        "a",
+        encoding="utf-8",
     ) as f:
         f.write(template_content)
-        # print(f"Template Content: {template_content}")
 
     return RedirectResponse(
-        url="/user-attendance",
+        # url="/user-attendance",
+        url=f"/chat-with-ai?staff_id={staff_id}&target_month={target_month}&list_table=prompt/user_attendance.html",
         status_code=status.HTTP_303_SEE_OTHER,
     )
 
@@ -320,17 +350,26 @@ api_key = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=api_key)
 
 
-@app.post("/chat-with-ai")
+@app.get("/chat-with-ai")
 async def chat_with_ai(
-    request: Request, staff_id: str = Form(...), target_month: str = Form(...)
+    request: Request,
+    list_table: str,
+    # uuid: str,  # = Form(...),
+    staff_id: str,  # = Form(...),
+    target_month: str,  # = Form(...),
 ):
+    # with open(Path(list_table), "r", encoding="utf-8") as f:
+    #     table_content = f.read()
+
     """Renders the initial prompt page for attendance analysis."""
     return templates.TemplateResponse(
         "prompt/mcp_prompt.html",
         {
             "request": request,
+            # "uuid": uuid,
             "staff_id": staff_id,
             "target_month": target_month,
+            "list_table": list_table,
         },
     )
 
