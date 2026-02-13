@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request, status, UploadFile, File, Form, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.responses import Response
 from mcp.server.sse import SseServerTransport
@@ -173,6 +174,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # print(f"どこdir: {BASE_DIR}")
 
 templates = Jinja2Templates(directory=str(Path(BASE_DIR, "templates")))
+app.mount(
+    path="/static",
+    app=StaticFiles(directory=str(Path(BASE_DIR, "static"))),
+    name="static",
+)
 
 
 @app.get("/read-secure")
