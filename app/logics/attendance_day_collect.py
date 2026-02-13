@@ -38,7 +38,7 @@ def format_rt(seconds: float) -> str:
     if seconds == 0.0:
         return "00:00"
     # //演算子は負の無限大方向に丸める（(-2.5 -> -3)）ため、切り上げには適しません。
-    h = math.ceil(seconds / 3600)
+    h = math.ceil(seconds / 3600) if seconds < 0 else int(seconds // 3600)
     # 演算子の結合順序について、Python では % より単項のマイナス - の方が優先度が高いので、たとえば -7 % 2 は (-7) % 2 と解釈されます。
     print(f"seconds % 3600 // 60: {(-seconds % 3600) // 60}")
     m = int((-seconds % 3600) // 60) if seconds < 0 else int((seconds % 3600) // 60)

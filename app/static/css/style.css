@@ -2,6 +2,9 @@
   display: none;
 }
 
+.csv-wrap {
+  margin: 3%;
+}
 .csv-wrap div form .csv-button {
   padding: 10px 20px;
   background-color: #dfdada;
@@ -11,10 +14,17 @@
   border-radius: 5px;
 }
 
+.diff-upload-wrap {
+  margin: 3%;
+}
+.diff-upload-wrap p {
+  margin: 2rem 0;
+}
 .diff-upload-wrap .upload-button {
   width: -moz-fit-content;
   width: fit-content;
-  background-color: #007bff;
+  padding: 1rem 2rem;
+  background-color: orange;
   color: white;
   text-decoration: none;
   border-radius: 5px;
@@ -33,6 +43,10 @@
 .diff-output-wrap #json-diff {
   height: 15rem;
   overflow-y: auto;
+}
+.diff-output-wrap #json-diff details summary {
+  all: revert;
+  display: list-item;
 }
 .diff-output-wrap #json-diff details pre {
   white-space: pre-wrap;
@@ -60,16 +74,20 @@
   border-radius: 5px;
 }
 
-.csv-button {
+.csv-upload {
+  margin: 3%;
+}
+.csv-upload .csv-button {
   width: -moz-fit-content;
   width: fit-content;
+  padding: 0 2rem;
   background-color: olivedrab;
   color: white;
   text-decoration: none;
   border-radius: 5px;
   cursor: pointer;
 }
-.csv-button input {
+.csv-upload .csv-button input {
   display: none;
 }
 
@@ -79,6 +97,7 @@
   color: white;
   text-decoration: none;
   border-radius: 5px;
+  margin: 0 3%;
 }
 
 .dl-button {
@@ -87,4 +106,5 @@
   color: white;
   text-decoration: none;
   border-radius: 5px;
+  margin-left: 4%;
 }/*# sourceMappingURL=style.css.map */

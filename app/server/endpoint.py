@@ -4,6 +4,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.responses import Response
+from starlette.middleware.base import BaseHTTPMiddleware
 from mcp.server.sse import SseServerTransport
 from mcp import ClientSession
 from mcp.client.sse import sse_client
@@ -75,6 +76,7 @@ async def sse_cleanup(client_ip: str):
 
 
 # endpoint.py に追加
+# 以前提供してくれたもの
 class SuppressResponseStartMiddleware:
     """SSE終了後の二重 http.response.start エラーを抑制するミドルウェア"""
 
@@ -100,8 +102,18 @@ class SuppressResponseStartMiddleware:
         await self.app(scope, receive, wrapped_send)
 
 
+class CustomMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        # 1. 前処理
+        response = await call_next(request)
+        # 2. 戻り値が正しいか確認
+        return response
+
+
 # アプリに登録
-app.add_middleware(SuppressResponseStartMiddleware)
+# ミドルウェアの登録（順番も重要です）
+app.add_middleware(SuppressResponseStartMiddleware)  # ← これを追加
+app.add_middleware(CustomMiddleware)
 
 
 @app.get("/sse")

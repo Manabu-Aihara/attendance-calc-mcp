@@ -15,12 +15,12 @@
 <body>
     <h1 id="h1-title">CSV file comparison</h1>
     <form method="post" action="output-csv-compare" enctype="multipart/form-data">
-        <div>
-            <strong>現システム</strong>のCSVファイルをアップロードしてください
+        <div class="csv-upload">
+            <p><strong>現システム</strong>のCSVファイルをアップロードしてください</p>
             <label for="old_csv" class="csv-button">CSV file<input name="old_csv" type="file" id="old_csv"></label>
         </div>
-        <div>
-            <strong>テスト環境システム</strong>のCSVファイルをアップロードしてください
+        <div class="csv-upload">
+            <p><strong>テスト環境システム</strong>のCSVファイルをアップロードしてください</p>
             <label for="new_csv" class="csv-button">CSV file<input name="new_csv" type="file" id="new_csv"></label>
         </div>
         <input type="hidden" name="uuid" value="{{ uuid }}">

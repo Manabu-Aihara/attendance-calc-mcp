@@ -9,6 +9,7 @@ def test_format_rt():
     assert format_rt(0.0) == "00:00"
     assert format_rt(3600) == "01:00"
     assert format_rt(-11880) == "-03:18"
+    assert format_rt(13500) == "03:45"
 
 
 @pytest.mark.skip

@@ -6,6 +6,8 @@
 
 // select_home.html
 .csv-wrap {
+    margin: 3%;
+
     div form .csv-button {
         padding: 10px 20px;
         background-color: #dfdada;
@@ -17,9 +19,16 @@
 }
 
 .diff-upload-wrap {
+    margin: 3%;
+
+    p {
+        margin: 2rem 0;
+    }
+
     .upload-button {
         width: fit-content;
-        background-color: #007bff;
+        padding: 1rem 2rem;
+        background-color: orange;
         color: white;
         text-decoration: none;
         border-radius: 5px;
@@ -41,13 +50,21 @@
         height: 15rem;
         overflow-y: auto;
 
-        details pre {
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            background-color: #F0F9F4;
-            padding: 10px;
-            border-radius: 4px;
-            font-size: 16px;
+        details {
+            summary {
+                // 「all: unsetでスタイルがリセットされない」場合の解決策
+                all: revert;
+                display: list-item;
+            }
+
+            pre {
+                white-space: pre-wrap;
+                word-wrap: break-word;
+                background-color: #F0F9F4;
+                padding: 10px;
+                border-radius: 4px;
+                font-size: 16px;
+            }
         }
     }
 
@@ -75,16 +92,21 @@
 }
 
 // csv_diff.html
-.csv-button {
-    width: fit-content;
-    background-color: olivedrab;
-    color: white;
-    text-decoration: none;
-    border-radius: 5px;
-    cursor: pointer;
+.csv-upload {
+    margin: 3%;
 
-    input {
-        display: none;
+    .csv-button {
+        width: fit-content;
+        padding: 0 2rem;
+        background-color: olivedrab;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        cursor: pointer;
+
+        input {
+            display: none;
+        }
     }
 }
 
@@ -94,6 +116,7 @@
     color: white;
     text-decoration: none;
     border-radius: 5px;
+    margin: 0 3%;
 }
 
 .dl-button {
@@ -102,4 +125,5 @@
     color: white;
     text-decoration: none;
     border-radius: 5px;
+    margin-left: 4%;
 }
