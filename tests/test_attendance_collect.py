@@ -4,7 +4,7 @@ from app.logics.logic_util import convert_to_dataframe
 from app.logics.attendance_day_collect import format_rt
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 def test_format_rt():
     assert format_rt(0.0) == "00:00"
     assert format_rt(3600) == "01:00"
@@ -12,19 +12,19 @@ def test_format_rt():
     assert format_rt(13500) == "03:45"
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_collect_attendance_data():
     from app.logics.attendance_day_collect import collect_attendance_data
 
     attendance_data = collect_attendance_data(
-        staff_id=118, from_day="2025-12-01", to_day="2025-12-31"
+        staff_id=201, from_day="2025-12-01", to_day="2025-12-31"
     )
     # print(attendance_data)
 
     from app.server.mcp_tools_call import diet_collect_attendance_data
 
     diet_data = diet_collect_attendance_data(attendance_data)
-    # print(diet_data)
+    print(diet_data)
 
     conv_df = convert_to_dataframe(attendance_data)
     print(conv_df)

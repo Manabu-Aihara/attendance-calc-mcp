@@ -10,18 +10,6 @@
     <!-- <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script> -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script>
-        // 追加されたメッセージを自動でMarkdownパースする
-        document.body.addEventListener('htmx:afterSettle', function (evt) {
-            const contents = evt.detail.elt.querySelectorAll('.markdown-content');
-            contents.forEach(el => {
-                if (!el.dataset.parsed) {
-                    el.innerHTML = marked.parse(el.textContent);
-                    el.dataset.parsed = "true";
-                }
-            });
-        });
-    </script>
     <title>Conversation page</title>
 </head>
 
@@ -50,6 +38,18 @@
         </form>
     </div>
     <div id="request-count" class="hidden">0</div>
+    <script>
+        // 追加されたメッセージを自動でMarkdownパースする
+        document.body.addEventListener('htmx:afterSettle', function (evt) {
+            const contents = evt.detail.elt.querySelectorAll('.markdown-content');
+            contents.forEach(el => {
+                if (!el.dataset.parsed) {
+                    el.innerHTML = marked.parse(el.textContent);
+                    el.dataset.parsed = "true";
+                }
+            });
+        });
+    </script>
     <script>
         const requestBtn = document.getElementById('request-button');
         const requestCount = document.getElementById('request-count');

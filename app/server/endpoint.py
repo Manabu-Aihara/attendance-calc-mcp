@@ -10,6 +10,7 @@ from mcp import ClientSession
 from mcp.client.sse import sse_client
 from dotenv import load_dotenv
 from google import genai
+from huggingface_hub import AsyncInferenceClient
 
 import os
 import anyio
@@ -344,12 +345,6 @@ async def render_user_attendance(request: Request):
     )
 
 
-# The client gets the API key from the environment variable `GEMINI_API_KEY`.
-load_dotenv()
-api_key = os.getenv("GEMINI_API_KEY")
-client = genai.Client(api_key=api_key)
-
-
 @app.get("/chat-with-ai")
 async def chat_with_ai(
     request: Request,
@@ -372,6 +367,20 @@ async def chat_with_ai(
             "list_table": list_table,
         },
     )
+
+
+# The client gets the API key from the environment variable `GEMINI_API_KEY`.
+load_dotenv()
+api_key_gem = os.getenv("GEMINI_API_KEY")
+client_gen = genai.Client(api_key=api_key_gem)
+
+api_key_hf = os.getenv("HF_TOKEN")
+client_hug = AsyncInferenceClient(
+    # provider="together",
+    api_key=api_key_hf,
+    # model="openai/gpt-oss-120b:cheapest",
+    # details=True,
+)
 
 
 @app.post("/analyze-attendance-prompt")
@@ -400,10 +409,17 @@ async def analyze_attendance_prompt(
             )
             raw_json = result.content[0].text
 
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        # contents=f"次の勤怠データを解析して、異常がないか確認してください：{raw_json}",
-        contents=f"{user_input}\n\n{raw_json}",
+    # response_gem25f = client_gen.models.generate_content(
+    #     model="gemini-2.5-flash",
+    #     # contents=f"次の勤怠データを解析して、異常がないか確認してください：{raw_json}",
+    #     contents=f"{user_input}\n\n{raw_json}",
+    # )
+    response_gtposs20 = await client_hug.chat_completion(
+        model="openai/gpt-oss-120b:cheapest",
+        messages=[
+            {"role": "user", "content": f"{user_input}\n\n{raw_json}"},
+        ],
+        # prompt=f"{user_input}\n\n{raw_json}",
     )
 
     # 3. 結果を Jinja2 で HTML に変換して返す（htmxがこれを受け取って画面を更新）
@@ -412,6 +428,7 @@ async def analyze_attendance_prompt(
         {
             "request": request,
             "user_input": user_input,
-            "ai_response": response.text,
+            # "ai_response": response_gem25f.text,
+            "ai_response": response_gtposs20.choices[0].message.content,
         },
     )

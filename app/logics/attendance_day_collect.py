@@ -33,6 +33,19 @@ def get_user_contract(contract_code: int, db_session: Session) -> str:
     return contract_query.NAME
 
 
+def convert_time_to_str(time_value: timedelta) -> str:
+    pattern = r"([0-9]{1,2}):([0-9]{2}):00"
+    # re.subで HH:MM 形式にする
+    match = re.search(pattern, time_value.__str__())
+    if match:
+        # グループ1(時)とグループ2(分)を取り出す
+        h = match.group(1)
+        m = match.group(2)
+        # zfill(2)で1桁の場合に0埋めする
+        time_value_str = f"{h.zfill(2)}:{m}"
+    return time_value_str
+
+
 # 秒数を HH:MM に変換する処理を追加
 def format_rt(seconds: float) -> str:
     if seconds == 0.0:
@@ -71,12 +84,21 @@ def collect_attendance_data(
     attendance_data["勤務形態"] = get_user_contract(
         records[0].StaffJobContract.CONTRACT_CODE, db_session
     )
-    if records[0].StaffHolidayContract is not None:
-        attendance_data["契約労働時間"] = records[0].StaffJobContract.PART_WORKTIME
-        attendance_data["契約有休時間"] = records[0].StaffHolidayContract.HOLIDAY_TIME
-    else:
-        attendance_data["契約労働時間"] = records[0].WORKTIME
-        attendance_data["契約有休時間"] = records[0].WORKTIME
+
+    try:
+        if records[0].StaffHolidayContract is not None:
+            part_work_time = timedelta(hours=records[0].StaffJobContract.PART_WORKTIME)
+            attendance_data["契約労働時間"] = convert_time_to_str(part_work_time)
+            part_holiday_time = timedelta(
+                hours=records[0].StaffHolidayContract.HOLIDAY_TIME
+            )
+            attendance_data["契約有休時間"] = convert_time_to_str(part_holiday_time)
+        else:
+            regular_work_time = timedelta(hours=records[0].WORKTIME)
+            attendance_data["契約労働時間"] = convert_time_to_str(regular_work_time)
+            attendance_data["契約有休時間"] = convert_time_to_str(regular_work_time)
+    except TypeError as e:
+        raise TypeError("契約時間の取得に失敗しました。") from e
 
     for record in records:
         attendance_obj: Attendance = record.Attendance
@@ -86,9 +108,9 @@ def collect_attendance_data(
         # if work_day not in attendance_data:
         attendance_data[work_day] = {}
 
-        attendance_data[work_day]["日付"] = attendance_obj.WORKDAY.day
+        attendance_data[work_day]["日付"] = f"{work_day}日"
         # オンコール
-        attendance_data[work_day]["オンコール"] = attendance_obj.ONCALL
+        # attendance_data[work_day]["オンコール"] = attendance_obj.ONCALL
         # 開始時間
         attendance_data[work_day]["出勤"] = convert_time(attendance_obj.STARTTIME)
         # 終了時間
@@ -104,6 +126,7 @@ def collect_attendance_data(
         # 残業申請
         attendance_data[work_day]["残業申請"] = attendance_obj.OVERTIME
 
+        # 月途中の契約変更する場合の保険
         # if record.StaffHolidayContract is None:
         #     setting_contract_worktime = record.WORKTIME
         #     setting_contract_off_time = record.WORKTIME
@@ -119,8 +142,8 @@ def collect_attendance_data(
 
         calculation_instance = calc_time_factory.get_instance(staff_id=staff_id)
         calculation_instance.set_data(
-            contract_work_time=attendance_data["契約労働時間"],
-            contract_holiday_time=attendance_data["契約有休時間"],
+            contract_work_time=part_work_time,
+            contract_holiday_time=part_holiday_time,
             start_time=attendance_obj.STARTTIME,
             end_time=attendance_obj.ENDTIME,
             notifications=(attendance_obj.NOTIFICATION, attendance_obj.NOTIFICATION2),
@@ -130,11 +153,7 @@ def collect_attendance_data(
 
         input_work_time = calculation_instance.calc_base_work_time()
         normal_rest_time = calculation_instance.calc_normal_rest(input_work_time)
-        normal_rest_time_str = (
-            re.sub(r"([0-9]{1,2}):([0-9]{2}):00", r"\1:\2", f"{normal_rest_time}")
-            if normal_rest_time > timedelta(hours=0)
-            else "0.0"
-        )
+        normal_rest_time_str = convert_time_to_str(normal_rest_time)
         attendance_data[work_day]["通常休憩時間"] = normal_rest_time_str
 
         # 時間休の有無
@@ -147,11 +166,7 @@ def collect_attendance_data(
 
         # 実働時間
         actual_work_time = calculation_instance.get_actual_work_time()
-        actual_work_time_str = (
-            re.sub(r"([0-9]{1,2}):([0-9]{2}):00", r"\1:\2", f"{actual_work_time}")
-            if actual_work_time > timedelta(hours=0)
-            else "0.0"
-        )
+        actual_work_time_str = convert_time_to_str(actual_work_time)
         attendance_data[work_day]["実働時間"] = actual_work_time_str
 
         # 実働時間(リアルタイム)
