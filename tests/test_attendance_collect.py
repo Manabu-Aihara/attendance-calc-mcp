@@ -17,7 +17,7 @@ def test_collect_attendance_data():
     from app.logics.attendance_day_collect import collect_attendance_data
 
     attendance_data = collect_attendance_data(
-        staff_id=201, from_day="2025-12-01", to_day="2025-12-31"
+        staff_id=118, from_day="2025-12-01", to_day="2025-12-31"
     )
     # print(attendance_data)
 

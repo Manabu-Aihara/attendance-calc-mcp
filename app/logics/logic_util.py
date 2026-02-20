@@ -14,10 +14,10 @@ def get_date_range(specified_month: str) -> Tuple[str, str]:
 
 
 FIXED_KEY_MAP = {
-    "社員ID": "sid",
-    "勤務形態": "typ",
-    "契約労働時間": "cw",
-    "契約有休時間": "ch",
+    "社員ID": "staff_id",
+    "勤務形態": "job_type",
+    "契約労働時間": "contract_work_time",
+    "契約有休時間": "contract_holiday_time",
 }
 
 
