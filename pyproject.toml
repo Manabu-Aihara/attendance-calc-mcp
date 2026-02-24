@@ -19,4 +19,5 @@ dependencies = [
     "mcp[cli]>=1.25.0",
     "google-genai>=1.60.0",
     "huggingface-hub>=1.4.1",
+    "watchdog>=6.0.0",
 ]

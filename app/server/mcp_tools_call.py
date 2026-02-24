@@ -27,23 +27,23 @@ async def handle_list_tools():
         Tool(
             name="get_specific_attendance",
             description=(
-                "【役割】あなたは『抽出エージェント』として、法規チェックではなく、勤怠の一覧結果について、調査・検証を行ってください。\n"
+                "【役割】あなたは勤怠管理の『抽出エージェント』として、法規チェックではなく、一覧結果についての検証・判定を行ってください。\n"
                 "【目的】旧システムとの差分分析を行い、新システムのロジックの正当性を証明するためのエビデンスを確認すること。\n"
                 "【重要定義：用語の取り違え厳禁】\n"
-                "1. notification_am / notification_pm (届出): notification_amは午前、notification_pmは午後の届出を示します。\n"
-                "2. total_work_time (実働時間): 「遅刻・早退・欠勤」を除いた有休等の notification_am / notification_pm 時間を含む値。契約労働時間(contract_work_time)との整合性が重要です。\n"
-                "3. actual_site_time (リアル実働時間): total_work_time から、notification_am / notification_pm の「有休(全日・半日)」「出張(全日・半日)」「時間休」の届出時間を除いた、現場での純粋な活動時間。\n"
-                "4. time_off_hours (時間休): notification_am / notification_pm に時間休の取得の有無を示すもので、['1h時間休', '2h時間休', '3h時間休', '1h中抜時休', '2h中抜時休', '3h中抜時休]が含まれると、'1'です。\n"
-                "5. normal_rest_time (通常休憩時間): 1日の中で決められた(昼食などの)休憩時間、time_off_hours など届出とは関係ありません。出勤(in)が13:00以降、または退勤(out)が13:00以下のとき適応されません。\n"
-                "6. contract_holiday_time (契約有休時間): 有給休暇における契約上の休暇時間。扱いは contract_work_time と同じです。\n"
-                "7. overtime_request (残業申請): 残業の有無を示します。 0 なら原則として total_work_time = contract_work_time です。\n"
-                "8. overtime (時間外): 残業時間を指します。overtime_request が 0 のとき、'00:00'となり、 overtime_request が 1 のとき、 total_work_time から contract_work_time との差分をとります。\n"
+                "1. notification_am / notification_pm (届出): notification_am は午前、notification_pm は午後の届出を示します。\n"
+                "2. total_work_time (実働時間): notification_am / notification_pm が、「遅刻・早退・欠勤」を除いた有休等の時間を含む値。\n"
+                "3. actual_site_time (リアル実働時間): total_work_time から、notification_am / notification_pm の「年休(全日・半日)」「出張(全日・半日)」「時間休」の届出時間を除いた、現場での純粋な活動時間。\n"
+                "4. time_off_hour_flag (時間休フラグ): notification_am / notification_pm に時間休の取得の有無を示すもので、['1h時間休', '2h時間休', '3h時間休', '1h中抜時休', '2h中抜時休', '3h中抜時休]のみ含まれると、1 です。\n"
+                "5. normal_rest_time (通常休憩時間): 1日の中で決められた休憩時間、notification_am / notification_pm の届出とは関係ありません。出勤(in)が13:00以降、または退勤(out)が13:00以下のとき適応されません。\n"
+                "6. overtime_request (残業申請): 残業の有無を(0, 1)で表示します。\n"
+                "7. contract_work_time(契約労働時間): 契約上の労働時間を表す、メタ情報です。total_work_time が異なっていたら、notification_am / notification_pm または overtime_request をチェックする。\n"
+                "8. contract_holiday_time (契約有休時間): 有給休暇における契約上の休暇時間です。notification_am / notification_pm が「年休全日・年休半日」のとき、total_work_time, actual_site_time の計算に用いられます。 \n"
+                "9. overtime (時間外): 残業時間を示します。overtime_request が 1 なら、total_work_time から contract_work_time との差分をとります。\n"
                 "【判定基準（仕様）】\n"
-                "- time_off_hoursが 1：【重要】この notification_am / notification_pm の内容が、in・out にあらかじめ反映されている場合があります。\n"
-                "- total_work_time：time_off_hours が 1 のとき、total_work_time がcontract_work_time未満になるとき(in, outにあらかじめ反映されている場合)は、計算ロジック上、(out - in) - normal_rest_time で算出される仕組みです。\n"
-                "- 備考(remark): time_off_hours が 1 のとき、記載があるケースが多いです。\n"
-                "- overtime_request が 0：total_work_time が contract_work_time未満で notification_am / notification_pm に何もなければ、『イレギュラー』と判定し、total_work_time は (out - in) - normal_rest_time で算出されます。\n"
-                "- overtime_request が 1：total_work_time は (out - in) - normal_rest_time で計算され、overtime が負の場合は、 notification_am / notification_pm 漏れの可能性を示唆します。\n"
+                "- time_off_hour_flagが 1：【重要】社員により notification_am / notification_pm の内容が、in・out にあらかじめ反映させているケースがあります。\n"
+                "- 備考(remark): time_off_hour_flag が 1 のとき、記載があるケースが多いです。\n"
+                "- overtime_request が 0：total_work_time が contract_work_time 未満で、且つ notification_am / notification_pm に何もなければ、total_work_time は out - in - normal_rest_time で算出され、その日は『イレギュラー』と判定します。\n"
+                "- overtime_request が 1：total_work_time は out - in - normal_rest_time で計算され、overtime が負の場合は、 notification_am / notification_pm 漏れの可能性を示唆します。\n"
                 "その他、レスポンスの各キーの意味は以下の通りです：\n"
                 "- day: 日付\n"
                 "- staff_id: 社員ID\n"
@@ -79,7 +79,7 @@ ATTENDANCE_KEY_MAP = {
     # "契約労働時間": "contract_work_time",
     # "契約有休時間": "contract_holiday_time",
     "通常休憩時間": "normal_rest_time",
-    "時間休": "time_off_hours",
+    "時間休フラグ": "time_off_hour_flag",
     "実働時間": "total_work_time",
     "リアル実働時間": "actual_site_time",
     "時間外": "overtime",
@@ -204,15 +204,18 @@ async def handle_get_prompt(name: str, arguments: dict):
                     content=TextContent(
                         type="text",
                         text=(
-                            "提示するデータは新システムの計算過程です。ツール説明(description)をよく読んでください。\n"
-                            "【判定基準】に照らし、計算ロジックとして不自然な箇所（仕様と出力の矛盾）を特定してください。\n"
+                            "提示するデータは新システムの集計に用いるための計算過程です。ツール説明(description)をよく読んでください。\n"
+                            "【判定基準】に照らし、勤怠データの不自然な箇所や矛盾点を特定してください。\n"
                             "■分析の視点:\n"
                             "1. 残業申請(overtime_request)の有無と、実働時間(total_work_time)・契約時間(contract_work_time)の計算関係は仕様通りか？\n"
-                            "2. リアル実働時間(actual_site_time)が、有休等の届出(notification_am / notification_pm)と矛盾なく算出されているか？\n"
-                            "3. 時間休(time_off_hours)が申請されている日で、total_work_time が contract_work_time 未満になっていたら、total_work_time に反映されていると判断すること。\n"
-                            "4. time_off_hours が申請されている日は、備考(remark)をチェックすること。\n\n"
-                            "【重要】JSONスキーマのキー名に使用される'total_work_time', 'actual_site_time'などは、システム管理者としての用語であり使用は禁止とします。回答の際、これらを必ず日本語に置き換えてください。\n"
+                            "2. リアル実働時間(actual_site_time)が、有休等の届出(notification_am / notification_pm)による計算が反映されているか？\n"
+                            "3. 時間休フラグ(time_off_hour_flag)が 1 のとき、total_work_time が contract_work_time 未満になっていたら、total_work_time に時間休分の時間が、すでに差し引かれていると判断して良い。\n"
+                            "4. time_off_hour_flag が 1 のときは、備考(remark)をチェックすること。\n"
+                            "5. total_work_time が、退勤(out) - 出勤(in) - 通常の休憩時間(normal_rest_time)で算出されていると判断した場合は、可能な限り理由を加えること。\n\n"
+                            "【重要】JSONスキーマのキー名('records'キーのリスト内も含む)は、システム管理者としての用語であり使用は禁止とします。回答の際は、これらを必ず日本語に置き換えてください。\n"
+                            "会社の仕様として、total_work_time は、'実働時間'に、actual_site_time は 'リアル実働時間'と表現してください。\n"
                             "問題のない箇所は、なるべく省き、問題のある日付とその理由を簡潔に列挙してください。\n"
+                            "システム上における(提供データへの)、修正提案は結構です。\n\n"
                             "■回答の構成例:\n"
                             "〇〇日: 実働時間が契約労働時間未満ですが、時間休が差し引かれ、退勤時間 - 出勤時間 - 通常の休憩時間で計算されています。\n"
                             "※『信頼性を証明する』といったメタな目的を回答文に含める必要はありません。"

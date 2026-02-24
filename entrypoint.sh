@@ -20,4 +20,14 @@ sleep 5
 
 # Gunicornを起動
 # ローカルの場合、8001ポートでアプリケーションを起動
-exec poetry run uvicorn app.server.endpoint:app --host 0.0.0.0 --port 8001 --reload
+exec poetry run uvicorn app.server.endpoint:app --host 0.0.0.0 --port 8001
+# watchmedo は指定されたディレクトリに cd（移動）してからコマンドを実行しようとする性質があるため
+# exec poetry run watchmedo auto-restart \
+#     --directory="." \
+#     --pattern="./app/*/*.py" \
+#     --recursive \
+#     --post-command="echo 'File changed, restarting uvicorn...'" \
+#     -- \
+#     uvicorn app.server.endpoint:app --host 0.0.0.0 --port 8001
+    # もし上記の設定でリロードが動かない場合
+    # --force-polling --interval 1 ... \ を auto-restart の後

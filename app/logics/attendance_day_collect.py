@@ -127,7 +127,9 @@ def collect_attendance_data(
             attendance_obj.NOTIFICATION2, db_session
         )
         # 残業申請
-        attendance_data[work_day]["残業申請"] = 1 if attendance_obj.OVERTIME else 0
+        attendance_data[work_day]["残業申請"] = (
+            1 if attendance_obj.OVERTIME == "1" else 0
+        )
 
         # 月途中の契約変更する場合の保険
         # if record.StaffHolidayContract is None:
@@ -171,7 +173,7 @@ def collect_attendance_data(
         attendance_data[work_day]["通常休憩時間"] = normal_rest_time_str
 
         # 時間休の有無
-        attendance_data[work_day]["時間休"] = (
+        attendance_data[work_day]["時間休フラグ"] = (
             1
             if attendance_obj.NOTIFICATION in calculation_instance.n_time_off_list
             or attendance_obj.NOTIFICATION2 in calculation_instance.n_time_off_list
