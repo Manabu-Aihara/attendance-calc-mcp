@@ -42,16 +42,16 @@ class CalcTimeClass:
 
     def set_data(
         self,
-        contract_work_time: float,
-        contract_holiday_time: float,
+        contract_work_time: timedelta,
+        contract_holiday_time: timedelta,
         start_time: str,
         end_time: str,
         notifications: tuple[str],
         overtime_check: str,
         holiday_work: str,
     ):
-        self.contract_work_time = timedelta(hours=contract_work_time)
-        self.contract_holiday_time = timedelta(hours=contract_holiday_time)
+        self.contract_work_time = contract_work_time
+        self.contract_holiday_time = contract_holiday_time
         self.start_time = start_time
         self.end_time = end_time
         self.notifications = notifications

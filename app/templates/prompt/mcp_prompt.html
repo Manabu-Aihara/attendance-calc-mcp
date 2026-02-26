@@ -10,18 +10,6 @@
     <!-- <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script> -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script>
-        // 追加されたメッセージを自動でMarkdownパースする
-        document.body.addEventListener('htmx:afterSettle', function (evt) {
-            const contents = evt.detail.elt.querySelectorAll('.markdown-content');
-            contents.forEach(el => {
-                if (!el.dataset.parsed) {
-                    el.innerHTML = marked.parse(el.textContent);
-                    el.dataset.parsed = "true";
-                }
-            });
-        });
-    </script>
     <title>Conversation page</title>
 </head>
 
@@ -49,7 +37,25 @@
                 class="px-4 py-2 font-semibold text-white bg-red-600 rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75">送信</button>
         </form>
     </div>
+    <a href="http://127.0.0.1:8000/mcp/auth"><button type="button"
+            class="px-3 py-2 text-black bg-gray-300 rounded">戻る</button></a>
+    <!-- <a href="https://test.yobo-system.net/mcp/auth"><button type="button"
+            class="px-3 py-2 text-black bg-gray-400 rounded">戻る</button></a> -->
+    <p style="color: tomato; font-weight: bold">注意</p>
+    <p>ブラウザの戻るボタンを押すと、正しく機能しなくなります。</p>
     <div id="request-count" class="hidden">0</div>
+    <script>
+        // 追加されたメッセージを自動でMarkdownパースする
+        document.body.addEventListener('htmx:afterSettle', function (evt) {
+            const contents = evt.detail.elt.querySelectorAll('.markdown-content');
+            contents.forEach(el => {
+                if (!el.dataset.parsed) {
+                    el.innerHTML = marked.parse(el.textContent);
+                    el.dataset.parsed = "true";
+                }
+            });
+        });
+    </script>
     <script>
         const requestBtn = document.getElementById('request-button');
         const requestCount = document.getElementById('request-count');
