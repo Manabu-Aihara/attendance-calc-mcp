@@ -2,9 +2,9 @@
 
 # 環境変数を.envファイルから読み込む
 # ローカルの場合、ここ使う
-set -a
-. /.env
-set +a
+# set -a
+# . /.env
+# set +a
 
 # SSHの設定ディレクトリをクリーンアップ
 rm -rf /root/.ssh
@@ -20,7 +20,7 @@ sleep 5
 
 # Gunicornを起動
 # ローカルの場合、8001ポートでアプリケーションを起動
-exec poetry run uvicorn app.server.endpoint:app --host 0.0.0.0 --port 8001
+exec poetry run uvicorn app.server.endpoint:app --host 0.0.0.0 --port 8080
 # watchmedo は指定されたディレクトリに cd（移動）してからコマンドを実行しようとする性質があるため
 # exec poetry run watchmedo auto-restart \
 #     --directory="." \

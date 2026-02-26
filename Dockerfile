@@ -4,7 +4,7 @@ FROM python:3.12.3-slim
 WORKDIR /workdir
 
 # ローカルの場合、8001
-EXPOSE 8001
+EXPOSE 8080
 
 # pipを使ってpoetryをインストール
 RUN pip install poetry
@@ -24,8 +24,8 @@ RUN apt-get update && apt-get install -y openssh-client sshpass
 # ポートフォーワーディングの設定
 RUN mkdir -p /root/.ssh && chmod 700 /root/.ssh
 # ローカルの場合、ここ使う
-COPY id_rsa /root/.ssh/id_rsa
-COPY .env /.env
+# COPY id_rsa /root/.ssh/id_rsa
+# COPY .env /.env
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
