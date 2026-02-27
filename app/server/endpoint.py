@@ -371,8 +371,8 @@ async def chat_with_ai(
 
 # The client gets the API key from the environment variable `GEMINI_API_KEY`.
 load_dotenv()
-api_key_gem = os.getenv("GEMINI_API_KEY")
-client_gen = genai.Client(api_key=api_key_gem)
+# api_key_gem = os.getenv("GEMINI_API_KEY")
+# client_gen = genai.Client(api_key=api_key_gem)
 
 api_key_hf = os.getenv("HF_TOKEN")
 client_hug = AsyncInferenceClient(
