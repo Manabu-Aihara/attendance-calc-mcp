@@ -393,7 +393,10 @@ async def analyze_attendance_prompt(
     """Fetches attendance data by calling the MCP tool
     and returns the result rendered in HTML."""
     # 1. MCP サーバーに接続（SSEクライアントとして）
-    async with sse_client("http://127.0.0.1:8001/sse") as (read_stream, write_stream):
+    # async with sse_client("http://127.0.0.1:8001/sse") as (read_stream, write_stream):
+    async with sse_client(
+        "https://attendance-calc-mcp-865742550561.asia-northeast1.run.app/sse"
+    ) as (read_stream, write_stream):
         async with ClientSession(read_stream, write_stream) as session:
             await session.initialize()
             print(f"Staff ID: {request.query_params.get('staff_id')}")
