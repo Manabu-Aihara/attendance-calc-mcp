@@ -376,10 +376,8 @@ client_gen = genai.Client(api_key=api_key_gem)
 
 api_key_hf = os.getenv("HF_TOKEN")
 client_hug = AsyncInferenceClient(
-    # provider="together",
+    # provider="cerebras",
     api_key=api_key_hf,
-    # model="openai/gpt-oss-120b:cheapest",
-    # details=True,
 )
 
 
@@ -419,6 +417,7 @@ async def analyze_attendance_prompt(
         messages=[
             {"role": "user", "content": f"{user_input}\n\n{raw_json}"},
         ],
+        # details=True, # 返り値がオブジェクト型になるらしい
         # prompt=f"{user_input}\n\n{raw_json}",
     )
 
