@@ -394,8 +394,11 @@ async def analyze_attendance_prompt(
     and returns the result rendered in HTML."""
     # 1. MCP サーバーに接続（SSEクライアントとして）
     # async with sse_client("http://127.0.0.1:8001/sse") as (read_stream, write_stream):
+    g_token = os.getenv("GCLOUD_TOKEN")
+    headers = {"Authorization": f"Bearer {g_token}"}
     async with sse_client(
-        "https://attendance-calc-mcp-865742550561.asia-northeast1.run.app/sse"
+        "https://attendance-calc-mcp-865742550561.asia-northeast1.run.app/sse",
+        headers=headers,
     ) as (read_stream, write_stream):
         async with ClientSession(read_stream, write_stream) as session:
             await session.initialize()
