@@ -279,6 +279,13 @@ class CalcTimeClass:
             半日申請、残業と諸々処理した後 - 時間休
         """
 
+    def get_time_off_hour(self) -> timedelta:
+        time_off_hour = timedelta(0)
+        for notification in self.notifications:
+            if notification in self.n_time_off_list:
+                time_off_hour += self.get_times_rest(notification)
+        return time_off_hour
+
     # リアル実働時間（労働時間 - 年休、出張、時間休など）
     def get_real_time(self) -> float:
         # 年休全日、出張全日なら00:00

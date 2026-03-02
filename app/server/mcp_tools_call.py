@@ -38,6 +38,9 @@ async def handle_list_tools():
                 "6. contract_work_time(契約労働時間): 契約上の労働時間を表す、メタ情報です。total_work_time と異なっていたら、notification_am / notification_pm または overtime_request をチェックする。\n"
                 "7. contract_holiday_time (契約有休時間): 有給休暇における契約上の休暇時間です。notification_am / notification_pm が「年休全日・年休半日」のとき、total_work_time, actual_site_time の計算に用いられます。 \n"
                 "8. overtime (時間外): 残業時間を示します。overtime_request が 1 なら、total_work_time から contract_work_time との差分をとります。\n"
+                "9. clock_work_time (打刻実働時間): 出退勤の打刻から通常休憩時間を差し引いた実働時間です。\n"
+                "10. total_work_time_calc_mode (実働時間算出モード): 実働時間が契約ベースか打刻ベースかを示します。\n"
+                "11. time_off_input_pattern (時間休入力パターン): 時間休を事前に打刻へ反映しているか、届出のみかを示します。\n"
                 "【判定基準（仕様）】\n"
                 "- time_off_hour_flag が 1: 【重要】total_work_time < contract_work_time になる場合、notification_am / notification_pm の時間休分が、in・out にあらかじめ反映させているケースとして、注意が必要です。\n"
                 "- time_off_hour_flag が 1: 備考(remark)に記載があるケースが多いです。\n"
@@ -61,7 +64,27 @@ async def handle_list_tools():
                 },
                 "required": ["staff_id", "target_month"],
             },
-        )
+        ),
+        Tool(
+            name="diagnose_attendance_records",
+            description=(
+                "【役割】勤怠データから、日別の『時間休入力パターン』と『実働時間算出モード』など、診断に必要な要約情報だけを抽出します。\n"
+                "【出力イメージ】meta（社員ID・勤務形態・契約時間）と、records（日別）には day, time_off_input_pattern, total_work_time_calc_mode, clock_work_time, time_off_hours, diagnostic_flags, diagnosis が含まれます。\n"
+                "このツールのJSONキー名はシステム用語なので、そのままではなく日本語の説明に置き換えて回答してください。"
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "staff_id": {"type": "integer", "description": "社員ID (例: 123)"},
+                    "target_month": {
+                        "type": "string",
+                        "pattern": r"^\d{4}-\d{2}$",
+                        "description": "開始日 (YYYY-MM形式)",
+                    },
+                },
+                "required": ["staff_id", "target_month"],
+            },
+        ),
     ]
 
 
@@ -83,6 +106,12 @@ ATTENDANCE_KEY_MAP = {
     "実働時間": "total_work_time",
     "リアル実働時間": "actual_site_time",
     "時間外": "overtime",
+    "打刻実働時間": "clock_work_time",
+    "時間休合計": "time_off_hours",
+    "実働時間算出モード": "total_work_time_calc_mode",
+    "時間休入力パターン": "time_off_input_pattern",
+    "診断フラグ": "diagnostic_flags",
+    "診断": "diagnosis",
     "備考": "remark",
 }
 
@@ -112,18 +141,56 @@ def diet_collect_attendance_data(
             shortened_day_record = {"day": day}
 
             for full_key, short_key in ATTENDANCE_KEY_MAP.items():
-                # 同日で社員IDが重複する場合はスキップ
-                # if day == shortened_record.get("d") and record.get(
-                #     "社員ID"
-                # ) == shortened_record.get("staff_id"):
-                #     continue
-                # if full_key in record and isinstance(record, dict):
-                shortened_day_record[short_key] = record[full_key]
+                if isinstance(record, dict) and full_key in record:
+                    shortened_day_record[short_key] = record[full_key]
             shortened_day_list.append(shortened_day_record)
 
         lightweight_dict["records"] = shortened_day_list
 
     # MCPのレスポンス形式（TextContent）に変換
+    return [
+        TextContent(
+            type="text",
+            text=json.dumps(
+                lightweight_dict, ensure_ascii=False, separators=(",", ":")
+            ),
+        )
+    ]
+
+
+def diet_diagnostic_attendance_data(
+    attendance_data: Dict[Any, Any],
+) -> List[TextContent]:
+    """
+    診断向けに最小限のキーだけを抽出したJSONを返す。
+    """
+    lightweight_dict: Dict[str, Any] = {}
+    shortened_meta_record: Dict[str, Any] = {}
+    for key, value in attendance_data.items():
+        if isinstance(key, str) and key in FIXED_KEY_MAP:
+            short_key = FIXED_KEY_MAP[key]
+            shortened_meta_record[short_key] = value
+        else:
+            break
+    lightweight_dict["meta"] = shortened_meta_record
+
+    shortened_day_list = []
+    for day, record in attendance_data.items():
+        if isinstance(day, int) and isinstance(record, dict):
+            shortened_day_record: Dict[str, Any] = {"day": day}
+            for full_key, short_key in ATTENDANCE_KEY_MAP.items():
+                if full_key in [
+                    "打刻実働時間",
+                    "時間休合計",
+                    "実働時間算出モード",
+                    "時間休入力パターン",
+                    "診断フラグ",
+                    "診断",
+                ] and full_key in record:
+                    shortened_day_record[short_key] = record[full_key]
+            shortened_day_list.append(shortened_day_record)
+    lightweight_dict["records"] = shortened_day_list
+
     return [
         TextContent(
             type="text",
@@ -168,11 +235,37 @@ async def get_specific_attendance(arguments: Dict):
             return [TextContent(type="text", text=f"Error: {str(e)}")]
 
 
+async def diagnose_attendance_records(arguments: Dict):
+    """
+    勤怠データから診断情報だけを抽出して返すツール。
+    """
+    from_day, to_day = get_date_range(arguments["target_month"])
+    print(
+        f"Diagnosing attendance for Staff ID: {type(arguments['staff_id'])} from {from_day} to {to_day}"
+    )
+
+    with Session() as db:
+        try:
+            data = await run_in_threadpool(
+                collect_attendance_data,
+                staff_id=arguments["staff_id"],
+                from_day=from_day,
+                to_day=to_day,
+                db_session=db,
+            )
+            shaped_data = diet_diagnostic_attendance_data(data)
+            return shaped_data
+        except Exception as e:
+            return [TextContent(type="text", text=f"Error: {str(e)}")]
+
+
 # 3. ツールの実行ロジック
 @mcp_server.call_tool()
 async def handle_call_tool(name: str, arguments: Dict):
     if name == "get_specific_attendance":
         return await get_specific_attendance(arguments)
+    if name == "diagnose_attendance_records":
+        return await diagnose_attendance_records(arguments)
 
     raise ValueError(f"Tool not found: {name}")
 
