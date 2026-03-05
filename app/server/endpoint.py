@@ -425,12 +425,13 @@ async def analyze_attendance_prompt(
             raw_json = result.content[0].text
 
     response_gem25f = client_gen.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-2.5-flash-lite",
         # contents=f"次の勤怠データを解析して、異常がないか確認してください：{raw_json}",
         contents=f"{user_input}\n\n{raw_json}",
     )
     # response_gtposs20 = await client_hug.chat_completion(
-    #     model="openai/gpt-oss-120b:cheapest",
+    #     # model="openai/gpt-oss-120b:cheapest",
+    #     model="deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
     #     messages=[
     #         {"role": "user", "content": f"{user_input}\n\n{raw_json}"},
     #     ],

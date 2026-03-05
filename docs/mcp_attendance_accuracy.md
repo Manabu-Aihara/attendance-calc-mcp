@@ -7,52 +7,28 @@
 
 ### 実施した変更（ツール側）
 
-- `attendance_day_collect.collect_attendance_data` に、日別の診断用フィールドを追加した。
+- `attendance_day_collect.collect_attendance_data` に、日別の診断用フィールドを追加・改善した。
   - 打刻実働時間: `打刻実働時間`（clock_work_time = 退勤 - 出勤 - 通常休憩時間）
   - 時間休合計: `時間休合計`（time_off_hours = 時間休の合計）
   - 実働時間算出モード: `実働時間算出モード`（total_work_time_calc_mode = `contract_based`/`clock_based`）
+    - 残業申請あり、または契約時間に満たない場合は `clock_based` と判定。
+    - それ以外（契約時間以上の打刻だが残業申請なし、または契約時間と一致）は `contract_based` と判定。
   - 時間休入力パターン: `時間休入力パターン`（time_off_input_pattern = `timeoff_pre_reflected`/`timeoff_not_pre_reflected`/None）
-  - 診断フラグ: `診断フラグ`（diagnostic_flags = `TIMEOFF_FLAG_ON` などのタグ配列）
-  - 診断メッセージ: `診断`（日本語1〜2文での簡易コメント）
-- `mcp_tools_call.ATTENDANCE_KEY_MAP` に上記キーのショート名を追加し、MCPレスポンスにも含めるようにした。
-- 既存ツール `get_specific_attendance`:
-  - これまで通り meta + records を返すが、records に診断用フィールドも含まれる。
-  - 整形時に欠損キーがあっても落ちないように防御的アクセスに変更。
-- 新ツール `diagnose_attendance_records` を追加。
-  - meta（社員ID・勤務形態・契約時間）と、日別に以下だけを返す軽量JSON。
-    - day
-    - time_off_input_pattern
-    - total_work_time_calc_mode
-    - clock_work_time
-    - time_off_hours
-    - diagnostic_flags
-    - diagnosis
-  - LLMはこのツールの結果を日本語に言い換えるだけで、「どちらの時間休入力パターンか」「前者のときに計算方法が変わる」点を説明できる。
+    - 時間休があり、かつ実働時間算出モードが `clock_based` の場合は「事前に反映された打刻」と判定。
+    - 時間休があり、かつ実働時間算出モードが `contract_based` の場合は「事前反映しない打刻」と判定。
+  - 診断フラグ: `診断フラグ`（diagnostic_flags = `TIMEOFF_PRE_REFLECTED_SUSPECT` などのタグ配列）
+  - 診断メッセージ: `診断`（日本語での詳細なコメント。複数の異常がある場合は連結して表示）
+- `mcp_tools_call.ATTENDANCE_KEY_MAP` に対応表を追加し、レスポンスの各キーの意味を LLM が正しく理解・変換できるようにした。
+- 新ツール `diagnose_attendance_records` を追加し、診断に特化した軽量な情報を返却可能にした。
+- `analyze_attendance_prompt` を更新し、LLM が「実働時間」「リアル実働時間」「時間休入力パターン」などの社内用語を正しく使い、計算ロジックの切り替えを説明するように指示を強化した。
 
-### 次回以降のタスクリスト（プロンプト／運用）
+### 検証済みパターン
 
-- プロンプト・descriptionの改良:
-  - `diagnose_attendance_records` の description を、
-    - 「時間休を事前に打刻へ反映した入力／事前に反映しない入力」という2パターンを必ず言及させる
-    - `time_off_input_pattern` と `total_work_time_calc_mode` を参照して、「どちらの入力パターンか」「契約ベースか打刻ベースか」を一言で説明させる
-    という方針で書き換える。
-  - `get_specific_attendance` の description に、
-    - JSONキー名と社内用語（実働時間・リアル実働時間・時間休など）の対応表
-    - 「ツールレスポンス内のキー名（staff_id や total_work_time など）はそのまま使わず、必ず社内の日本語表現に置き換えて回答する」こと
-    を明示する。
-  - MCP prompt (`analyze_attendance_prompt`) 側で、
-    - JSONキー名は管理用語であること
-    - 回答では「実働時間」「リアル実働時間」「時間休を事前に反映した打刻」等の社内表現に置き換えること
-    - time_off_input_pattern / total_work_time_calc_mode を参照して、「時間休入力パターン」と「計算方法の切り替え」があれば必ず触れること
-    - 「問題のある日」だけを列挙すること
-    を明示する。
-- 評価データの準備:
-  - 代表的なパターン（時間休事前反映あり/なし・残業申請あり/なし・届出漏れ疑い等）ごとに、実データを数件ずつ用意。
-  - 各パターンに対して期待される自然言語の回答例を作成し、LLMの出力と比較する簡易テストを作る。
-- モデル選定とコスト最適化:
-  - 現状の `gemini-2.5-flash` に加え、安価な Flash-Lite 系や Mini/Nano 系モデル、DeepSeek などを少数サンプルで比較。
-  - 「説明の一貫性」「ルール遵守度」「コスト/1000件あたり」の3観点でログを取り、運用モデルを決める。
-- 将来的な拡張:
-  - 月途中の契約変更を扱う必要が出た場合、meta だけでなく日別にも契約時間を展開し、診断ロジックに反映する。
-  - 新旧システムの双方の結果を同時に提示し、「どちらのロジックでどう差が出ているか」を比較するツールを追加する。
+`tests/test_issue14_diagnosis.py` にて、以下のパターンが正しく診断されることを確認済み：
+1. **時間休を事前反映しないパターン**: 打刻が契約時間通りだが時間休がある場合、契約ベースで算出されている旨を表示。
+2. **時間休を事前に反映したパターン**: 打刻が契約時間未満で時間休がある場合、打刻ベースで算出されている旨を表示。
+3. **残業申請ありで実働不足**: 残業申請があるのに実働時間が契約時間を下回る（時間外がマイナス）場合に、届出漏れの可能性を指摘。
+4. **届出なしの不足**: 有休等の届出がないのに契約時間に満たない場合、イレギュラーとして指摘。
+
+### 今後の課題（運用・拡張）
 

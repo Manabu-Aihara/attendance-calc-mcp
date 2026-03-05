@@ -51,7 +51,7 @@ def test_collect_attendance_data():
     print(extracted_df)
 
     diagnosis_df = conv_df.loc[
-        :, ["日付", "実働時間算出モード", "時間休入力パターン", "診断フラグ", "診断"]
+        :, ["日付", "実働時間算出モード", "時間休入力パターン", "診断フラグ"]
     ]
     print(diagnosis_df)
 

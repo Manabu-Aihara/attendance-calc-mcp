@@ -221,17 +221,18 @@ def collect_attendance_data(
         actual_work_time_str = convert_time_to_str(actual_work_time)
         attendance_data[work_day]["実働時間"] = actual_work_time_str
 
-        # [1, 2, 8] = ["遅刻", "早退", "欠勤"]
-        total_work_time_calc_mode = (
-            "contract_based"
-            if timedelta_lt(actual_work_time, clock_work_time)
-            and attendance_obj.OVERTIME == "0"
-            and (
-                attendance_obj.NOTIFICATION not in [1, 2, 8]
-                or attendance_obj.NOTIFICATION2 not in [1, 2]
-            )
-            else "clock_based"
-        )
+        # 実働時間算出モードの判定
+        if attendance_obj.OVERTIME == "1":
+            total_work_time_calc_mode = "clock_based"
+        elif timedelta_gt(clock_work_time, which_contract_worktime):
+            # 契約時間を超えて働いているが残業申請がない場合、契約時間に丸められる
+            total_work_time_calc_mode = "contract_based"
+        elif timedelta_lt(clock_work_time, which_contract_worktime):
+            # 契約時間に満たない場合、打刻時間が実働時間となる（欠勤・遅刻・早退など）
+            total_work_time_calc_mode = "clock_based"
+        else:
+            # 契約時間と一致する場合
+            total_work_time_calc_mode = "contract_based"
         attendance_data[work_day]["実働時間算出モード"] = total_work_time_calc_mode
 
         # 実働時間(リアルタイム)
@@ -253,32 +254,16 @@ def collect_attendance_data(
         # 時間休入力パターン: 追加ツール用
         time_off_input_pattern = None
         diagnostic_flags = []
-        if attendance_data[work_day]["時間休合計"] != "00:00":
-            if timedelta_lt(actual_work_time, which_contract_worktime):
+        if time_off_hours > timedelta(0):
+            if total_work_time_calc_mode == "clock_based":
+                # 打刻ベース（＝契約時間未満）かつ時間休ありの場合、打刻に事前に反映されている可能性が高い
                 time_off_input_pattern = "timeoff_pre_reflected"
-                diagnostic_flags.append("TIMEOFF_PRE_REFLECTED_SUSPECT")  # 時刻ベース
+                diagnostic_flags.append("TIMEOFF_PRE_REFLECTED_SUSPECT")
             elif total_work_time_calc_mode == "contract_based":
+                # 契約ベース（＝打刻が契約時間以上）かつ時間休ありの場合、打刻には反映されていない
                 time_off_input_pattern = "timeoff_not_pre_reflected"
-                diagnostic_flags.append(
-                    "TIMEOFF_NOT_PRE_REFLECTED_SUSPECT"
-                )  # 契約時間ベース
-        # else:
-        #     time_off_input_pattern = "timeoff_not_pre_reflected"
-        # diagnostic_flags.append("TIMEOFF_FLAG_OFF")
+                diagnostic_flags.append("TIMEOFF_NOT_PRE_REFLECTED_SUSPECT")
         attendance_data[work_day]["時間休入力パターン"] = time_off_input_pattern
-
-        # まだ必要性が不明 25/3/3
-        # if total_work_time_calc_mode == "clock_based":
-        #     diagnostic_flags.append("TOTAL_CLOCK_BASED")
-        # else:
-        #     diagnostic_flags.append("TOTAL_CONTRACT_BASED")
-
-        # # if attendance_obj.OVERTIME == "0":
-        # if timedelta_lt(actual_work_time, which_contract_worktime):
-        #     diagnostic_flags.append("TOTAL_LT_CONTRACT")
-
-        # if attendance_obj.OVERTIME == "1":
-        #     diagnostic_flags.append("OVERTIME_REQUEST_ON")
 
         if over_work_time < 0:
             diagnostic_flags.append("OVERTIME_NEGATIVE")
@@ -291,30 +276,39 @@ def collect_attendance_data(
             and timedelta_lt(clock_work_time, which_contract_worktime)
         ):
             diagnostic_flags.append("IRREGULAR_NO_NOTIFICATION")
-        elif timedelta_lt(actual_work_time, which_contract_worktime):
+        elif (
+            timedelta_lt(actual_work_time, which_contract_worktime)
+            and attendance_obj.NOTIFICATION not in ["1", "2", "8"]
+            and attendance_obj.NOTIFICATION2 not in ["1", "2"]
+        ):
+            print(
+                f"{attendance_obj.NOTIFICATION2}, {type(attendance_obj.NOTIFICATION2)}"
+            )
             diagnostic_flags.append("BASIC_IRREGULAR")
         attendance_data[work_day]["診断フラグ"] = diagnostic_flags
 
-        diagnosis = None
+        diagnosis_list = []
         if time_off_input_pattern == "timeoff_pre_reflected":
-            diagnosis = (
+            diagnosis_list.append(
                 "時間休を事前に反映した打刻の可能性が高く、"
                 "実働時間は打刻ベース（退勤-出勤-通常休憩）で算出されています。"
             )
         elif time_off_input_pattern == "timeoff_not_pre_reflected":
-            diagnosis = (
+            diagnosis_list.append(
                 "時間休を事前反映しない打刻の可能性が高く、"
                 "実働時間は契約ベースです。"
             )
-        elif oncall_zero_pattern == "oncall_waited":
-            diagnosis = "オンコールがあり、出勤時刻が'00:00'ですが、出勤扱いです。"
+
+        if oncall_zero_pattern == "oncall_waited":
+            diagnosis_list.append("オンコールがあり、出勤時刻が'00:00'ですが、出勤扱いです。")
         elif "OVERTIME_NEGATIVE" in diagnostic_flags:
-            diagnosis = "残業申請ありですが時間外がマイナスです。届出漏れなどの可能性があります。"
+            diagnosis_list.append("残業申請ありですが時間外がマイナスです。届出漏れなどの可能性があります。")
         elif "IRREGULAR_NO_NOTIFICATION" in diagnostic_flags:
-            diagnosis = "有休等の届出なしで実働時間が契約労働時間未満です。打刻ベース算出のイレギュラーの可能性があります。"
+            diagnosis_list.append("有休等の届出なしで実働時間が契約労働時間未満です。打刻ベース算出のイレギュラーの可能性があります。")
         elif "BASIC_IRREGULAR" in diagnostic_flags:
-            diagnosis = "実働時間が契約労働時間未満です。打刻ベース算出のイレギュラーの可能性があります。"
-        attendance_data[work_day]["診断"] = diagnosis
+            diagnosis_list.append("実働時間が契約労働時間未満です。打刻ベース算出のイレギュラーの可能性があります。")
+        
+        attendance_data[work_day]["診断"] = " ".join(diagnosis_list) if diagnosis_list else None
 
         # 備考
         attendance_data[work_day]["備考"] = (
