@@ -167,6 +167,8 @@ class CalcTimeClass:
         """
 
     # 半日出張、半休、生理休暇かつ打刻のある場合
+    # パート対応 → 契約労働時間と契約有休時間の差
+    # イレギュラーなら、+ イレギュラー分
     def _provide_half_notify(self) -> timedelta:
         input_time = self.calc_base_work_time()
         working_time = input_time - self.calc_normal_rest(input_time)
@@ -278,6 +280,13 @@ class CalcTimeClass:
         @Return: float
             半日申請、残業と諸々処理した後 - 時間休
         """
+
+    def get_time_off_hour(self) -> timedelta:
+        time_off_hour = timedelta(0)
+        for notification in self.notifications:
+            if notification in self.n_time_off_list:
+                time_off_hour += self.get_times_rest(notification)
+        return time_off_hour
 
     # リアル実働時間（労働時間 - 年休、出張、時間休など）
     def get_real_time(self) -> float:

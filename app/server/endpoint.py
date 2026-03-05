@@ -268,6 +268,22 @@ async def handle_output_csv_diff(
     )
 
 
+display_item_list = [
+    "日付",
+    "オンコール",
+    "出勤",
+    "退勤",
+    "届出(AM)",
+    "届出(PM)",
+    "残業申請",
+    "通常休憩時間",
+    "実働時間",
+    "リアル実働時間",
+    "時間外",
+    "備考",
+]
+
+
 @app.post("/make-attendance-list")
 async def get_attendance(
     request: Request,
@@ -308,7 +324,8 @@ async def get_attendance(
     template_content += table_wrap
 
     staff_data_df = convert_to_dataframe(staff_data_dict)
-    template_content += staff_data_df.to_html(
+    extracted_data_df = staff_data_df[display_item_list]
+    template_content += extracted_data_df.to_html(
         classes="table table-striped", index=False
     )
     close_table = "</div>"
@@ -376,10 +393,8 @@ client_gen = genai.Client(api_key=api_key_gem)
 
 api_key_hf = os.getenv("HF_TOKEN")
 client_hug = AsyncInferenceClient(
-    # provider="together",
+    # provider="cerebras",
     api_key=api_key_hf,
-    # model="openai/gpt-oss-120b:cheapest",
-    # details=True,
 )
 
 
@@ -409,18 +424,20 @@ async def analyze_attendance_prompt(
             )
             raw_json = result.content[0].text
 
-    # response_gem25f = client_gen.models.generate_content(
-    #     model="gemini-2.5-flash",
-    #     # contents=f"次の勤怠データを解析して、異常がないか確認してください：{raw_json}",
-    #     contents=f"{user_input}\n\n{raw_json}",
-    # )
-    response_gtposs20 = await client_hug.chat_completion(
-        model="openai/gpt-oss-120b:cheapest",
-        messages=[
-            {"role": "user", "content": f"{user_input}\n\n{raw_json}"},
-        ],
-        # prompt=f"{user_input}\n\n{raw_json}",
+    response_gem25f = client_gen.models.generate_content(
+        model="gemini-2.5-flash-lite",
+        # contents=f"次の勤怠データを解析して、異常がないか確認してください：{raw_json}",
+        contents=f"{user_input}\n\n{raw_json}",
     )
+    # response_gtposs20 = await client_hug.chat_completion(
+    #     # model="openai/gpt-oss-120b:cheapest",
+    #     model="deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
+    #     messages=[
+    #         {"role": "user", "content": f"{user_input}\n\n{raw_json}"},
+    #     ],
+    #     # details=True, # 返り値がオブジェクト型になるらしい
+    #     # prompt=f"{user_input}\n\n{raw_json}",
+    # )
 
     # 3. 結果を Jinja2 で HTML に変換して返す（htmxがこれを受け取って画面を更新）
     return templates.TemplateResponse(
@@ -428,7 +445,7 @@ async def analyze_attendance_prompt(
         {
             "request": request,
             "user_input": user_input,
-            # "ai_response": response_gem25f.text,
-            "ai_response": response_gtposs20.choices[0].message.content,
+            "ai_response": response_gem25f.text,
+            # "ai_response": response_gtposs20.choices[0].message.content,
         },
     )
