@@ -91,7 +91,7 @@ async def handle_list_tools():
 # mcp_tools_call.py への実装例
 ATTENDANCE_KEY_MAP = {
     # "社員ID": "staff_id",
-    # "オンコール": "oc",
+    "オンコール": "oncall",
     "日付": "day",
     "出勤": "in",
     "退勤": "out",
@@ -102,7 +102,7 @@ ATTENDANCE_KEY_MAP = {
     # "契約労働時間": "contract_work_time",
     # "契約有休時間": "contract_holiday_time",
     "通常休憩時間": "normal_rest_time",
-    "時間休フラグ": "time_off_hour_flag",
+    # "時間休フラグ": "time_off_hour_flag",
     "実働時間": "total_work_time",
     "リアル実働時間": "actual_site_time",
     "時間外": "overtime",
@@ -179,14 +179,18 @@ def diet_diagnostic_attendance_data(
         if isinstance(day, int) and isinstance(record, dict):
             shortened_day_record: Dict[str, Any] = {"day": day}
             for full_key, short_key in ATTENDANCE_KEY_MAP.items():
-                if full_key in [
-                    "打刻実働時間",
-                    "時間休合計",
-                    "実働時間算出モード",
-                    "時間休入力パターン",
-                    "診断フラグ",
-                    "診断",
-                ] and full_key in record:
+                if (
+                    full_key
+                    in [
+                        "打刻実働時間",
+                        "時間休合計",
+                        "実働時間算出モード",
+                        "時間休入力パターン",
+                        "診断フラグ",
+                        "診断",
+                    ]
+                    and full_key in record
+                ):
                     shortened_day_record[short_key] = record[full_key]
             shortened_day_list.append(shortened_day_record)
     lightweight_dict["records"] = shortened_day_list

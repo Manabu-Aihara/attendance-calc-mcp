@@ -268,6 +268,22 @@ async def handle_output_csv_diff(
     )
 
 
+display_item_list = [
+    "日付",
+    "オンコール",
+    "出勤",
+    "退勤",
+    "届出(AM)",
+    "届出(PM)",
+    "残業申請",
+    "通常休憩時間",
+    "実働時間",
+    "リアル実働時間",
+    "時間外",
+    "備考",
+]
+
+
 @app.post("/make-attendance-list")
 async def get_attendance(
     request: Request,
@@ -308,7 +324,8 @@ async def get_attendance(
     template_content += table_wrap
 
     staff_data_df = convert_to_dataframe(staff_data_dict)
-    template_content += staff_data_df.to_html(
+    extracted_data_df = staff_data_df[display_item_list]
+    template_content += extracted_data_df.to_html(
         classes="table table-striped", index=False
     )
     close_table = "</div>"

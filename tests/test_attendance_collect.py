@@ -17,7 +17,12 @@ def test_collect_attendance_data():
     from app.logics.attendance_day_collect import collect_attendance_data
 
     attendance_data = collect_attendance_data(
-        staff_id=152, from_day="2025-12-01", to_day="2025-12-31"
+        # staff_id=201,
+        # from_day="2025-12-01",
+        # to_day="2025-12-31",
+        staff_id=20,
+        from_day="2026-01-01",
+        to_day="2026-01-31",
     )
     # print(attendance_data)
 
@@ -27,7 +32,28 @@ def test_collect_attendance_data():
     print(diet_data)
 
     conv_df = convert_to_dataframe(attendance_data)
-    print(conv_df)
+
+    extracted_df = conv_df.loc[
+        :,
+        [
+            "日付",
+            "オンコール",
+            "出勤",
+            "退勤",
+            "届出(AM)",
+            "届出(PM)",
+            "残業申請",
+            "実働時間",
+            "リアル実働時間",
+            "時間外",
+        ],
+    ]
+    print(extracted_df)
+
+    diagnosis_df = conv_df.loc[
+        :, ["日付", "実働時間算出モード", "時間休入力パターン", "診断フラグ", "診断"]
+    ]
+    print(diagnosis_df)
 
 
 @pytest.mark.skip
