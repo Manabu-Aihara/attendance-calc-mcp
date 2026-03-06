@@ -32,22 +32,43 @@ async def handle_list_tools():
                 "【重要定義：用語の取り違え厳禁】\n"
                 "1. total_work_time (実働時間): 届出(notification_am / notification_pm)が、有休・出張等の時間を含む値。\n"
                 "2. actual_site_time (リアル実働時間): total_work_time から、notification_am / notification_pm の「年休(全日・半日)」「出張(全日・半日)」「時間休」の届出時間を除いた、現場での純粋な活動時間。\n"
-                "3. time_off_hour_flag (時間休フラグ): notification_am / notification_pm に時間休の取得の有無を示すもの。['1h時間休', '2h時間休', '3h時間休', '1h中抜時休', '2h中抜時休', '3h中抜時休]のみ含まれると、1 になります。\n"
+                "3. time_off_hours (時間休合計): 時間休の取得を示すもので、'00:00'でなければ、その日取得したことになります。\n"
                 "4. normal_rest_time (通常休憩時間): 1日の中で決められた休憩時間、notification_am / notification_pm とは関係ありません。計算ロジック上、出勤(in)が13:00以降、または退勤(out)が13:00以下のとき適応されません。\n"
                 "5. overtime_request (残業申請): 残業の有無を(0, 1)で表示します。\n"
                 "6. contract_work_time(契約労働時間): 契約上の労働時間を表す、メタ情報です。total_work_time と異なっていたら、notification_am / notification_pm または overtime_request をチェックする。\n"
                 "7. contract_holiday_time (契約有休時間): 有給休暇における契約上の休暇時間です。notification_am / notification_pm が「年休全日・年休半日」のとき、total_work_time, actual_site_time の計算に用いられます。 \n"
                 "8. overtime (時間外): 残業時間を示します。overtime_request が 1 なら、total_work_time から contract_work_time との差分をとります。\n"
+                "9. clock_work_time (打刻実働時間): 出退勤の打刻から通常休憩時間を差し引いた実働時間です。\n"
+                "10. total_work_time_calc_mode (実働時間算出モード): 実働時間が契約ベースか打刻ベースかを示します。\n"
+                "11. time_off_input_pattern (時間休入力パターン): 時間休を事前に打刻へ反映しているか、届出のみかを示します。\n"
+                "【重要ルール】\n"
+                "- ツールレスポンス内のキー名（staff_id, total_work_time など）はシステム内部の管理用語です。ユーザーへの回答では、これらをそのまま使わず、必ず以下の「対応表」に基づいた社内の日本語表現に置き換えてください。\n"
+                "【JSONキーと日本語名称の対応表】\n"
+                "- staff_id: 社員ID\n"
+                "- day: 日付\n"
+                "- job_type: 勤務形態\n"
+                "- contract_work_time: 契約労働時間\n"
+                "- contract_holiday_time: 契約有休時間\n"
+                "- in: 出勤\n"
+                "- out: 退勤\n"
+                "- notification_am: 届出(AM)\n"
+                "- notification_pm: 届出(PM)\n"
+                "- overtime_request: 残業申請\n"
+                "- normal_rest_time: 通常休憩時間\n"
+                "- total_work_time: 実働時間\n"
+                "- actual_site_time: リアル実働時間\n"
+                "- overtime: 時間外\n"
+                "- clock_work_time: 打刻実働時間\n"
+                "- time_off_hours: 時間休合計\n"
+                "- total_work_time_calc_mode: 実働時間算出モード\n"
+                "- time_off_input_pattern: 時間休入力パターン\n"
+                "- diagnosis: 診断\n"
                 "【判定基準（仕様）】\n"
                 "- time_off_hour_flag が 1: 【重要】total_work_time < contract_work_time になる場合、notification_am / notification_pm の時間休分が、in・out にあらかじめ反映させているケースとして、注意が必要です。\n"
                 "- time_off_hour_flag が 1: 備考(remark)に記載があるケースが多いです。\n"
                 "- overtime_request が 0： notification_am / notification_pm に「遅刻・早退・欠勤」が含まなければ、原則として total_work_time = contract_work_time となります。\n"
                 "- overtime_request が 0： total_work_time < contract_work_time で、且つ notification_am / notification_pm に何もなければ、total_work_time は out - in - normal_rest_time で算出され、その日は『イレギュラー』と判定します。\n"
                 "- overtime_request が 1： total_work_time は out - in - normal_rest_time で計算され、overtime が負の場合は、 notification_am / notification_pm 漏れの可能性を示唆します。\n"
-                "その他、レスポンスの各キーの意味は以下の通りです：\n"
-                "- day: 日付\n"
-                "- staff_id: 社員ID\n"
-                "- job_type: 勤務形態\n"
             ),
             inputSchema={
                 "type": "object",
@@ -61,14 +82,37 @@ async def handle_list_tools():
                 },
                 "required": ["staff_id", "target_month"],
             },
-        )
+        ),
+        Tool(
+            name="diagnose_attendance_records",
+            description=(
+                "【役割】勤怠データから、日別の『時間休入力パターン』と『実働時間算出モード』など、診断に必要な要約情報だけを抽出します。\n"
+                "【出力イメージ】meta（社員ID・勤務形態・契約時間）と、records（日別）には day, time_off_input_pattern, total_work_time_calc_mode, clock_work_time, time_off_hours, diagnostic_flags, diagnosis が含まれます。\n"
+                "【重要】このツールのJSONキー名はシステム用語なので、回答の際は必ず日本語の説明に置き換えてください。\n"
+                "特に、以下の2点を必ず言及・説明に含めてください：\n"
+                "1. 時間休の入力パターン: 「時間休を事前に打刻へ反映した入力（timeoff_pre_reflected）」か「事前に反映しない入力（timeoff_not_pre_reflected）」かのどちらに該当するか。\n"
+                "2. 計算方法の切り替え: time_off_input_pattern と total_work_time_calc_mode を参照し、「契約時間ベース」か「打刻（退勤-出勤-休憩）ベース」かのどちらで実働時間が算出されているか。\n"
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "staff_id": {"type": "integer", "description": "社員ID (例: 123)"},
+                    "target_month": {
+                        "type": "string",
+                        "pattern": r"^\d{4}-\d{2}$",
+                        "description": "開始日 (YYYY-MM形式)",
+                    },
+                },
+                "required": ["staff_id", "target_month"],
+            },
+        ),
     ]
 
 
 # mcp_tools_call.py への実装例
 ATTENDANCE_KEY_MAP = {
     # "社員ID": "staff_id",
-    # "オンコール": "oc",
+    "オンコール": "oncall",
     "日付": "day",
     "出勤": "in",
     "退勤": "out",
@@ -79,10 +123,15 @@ ATTENDANCE_KEY_MAP = {
     # "契約労働時間": "contract_work_time",
     # "契約有休時間": "contract_holiday_time",
     "通常休憩時間": "normal_rest_time",
-    "時間休フラグ": "time_off_hour_flag",
     "実働時間": "total_work_time",
     "リアル実働時間": "actual_site_time",
     "時間外": "overtime",
+    "打刻実働時間": "clock_work_time",
+    "時間休合計": "time_off_hours",
+    "実働時間算出モード": "total_work_time_calc_mode",
+    "時間休入力パターン": "time_off_input_pattern",
+    "診断フラグ": "diagnostic_flags",
+    "診断": "diagnosis",
     "備考": "remark",
 }
 
@@ -93,8 +142,8 @@ def diet_collect_attendance_data(
     """
     元の巨大な辞書データから、必要なキーだけを短縮して抽出するユーティリティ。
     """
-    lightweight_dict = {}
-    shortened_meta_record = {}
+    lightweight_dict: Dict[Any, Any] = {}
+    shortened_meta_record: Dict[Any, Any] = {}
     for key, value in attendance_data.items():
         if isinstance(key, str) and key in FIXED_KEY_MAP:
             # for full_key, short_key in FIXED_KEY_MAP.items():
@@ -112,18 +161,60 @@ def diet_collect_attendance_data(
             shortened_day_record = {"day": day}
 
             for full_key, short_key in ATTENDANCE_KEY_MAP.items():
-                # 同日で社員IDが重複する場合はスキップ
-                # if day == shortened_record.get("d") and record.get(
-                #     "社員ID"
-                # ) == shortened_record.get("staff_id"):
-                #     continue
-                # if full_key in record and isinstance(record, dict):
-                shortened_day_record[short_key] = record[full_key]
+                if isinstance(record, dict) and full_key in record:
+                    shortened_day_record[short_key] = record[full_key]
             shortened_day_list.append(shortened_day_record)
 
         lightweight_dict["records"] = shortened_day_list
 
     # MCPのレスポンス形式（TextContent）に変換
+    return [
+        TextContent(
+            type="text",
+            text=json.dumps(
+                lightweight_dict, ensure_ascii=False, separators=(",", ":")
+            ),
+        )
+    ]
+
+
+def diet_diagnostic_attendance_data(
+    attendance_data: Dict[Any, Any],
+) -> List[TextContent]:
+    """
+    診断向けに最小限のキーだけを抽出したJSONを返す。
+    """
+    lightweight_dict: Dict[Any, Any] = {}
+    shortened_meta_record: Dict[Any, Any] = {}
+    for key, value in attendance_data.items():
+        if isinstance(key, str) and key in FIXED_KEY_MAP:
+            short_key = FIXED_KEY_MAP[key]
+            shortened_meta_record[short_key] = value
+        else:
+            break
+    lightweight_dict["meta"] = shortened_meta_record
+
+    shortened_day_list = []
+    for day, record in attendance_data.items():
+        if isinstance(day, int) and isinstance(record, dict):
+            shortened_day_record: Dict[str, Any] = {"day": day}
+            for full_key, short_key in ATTENDANCE_KEY_MAP.items():
+                if (
+                    full_key
+                    in [
+                        "打刻実働時間",
+                        "時間休合計",
+                        "実働時間算出モード",
+                        "時間休入力パターン",
+                        "診断フラグ",
+                        "診断",
+                    ]
+                    and full_key in record
+                ):
+                    shortened_day_record[short_key] = record[full_key]
+            shortened_day_list.append(shortened_day_record)
+    lightweight_dict["records"] = shortened_day_list
+
     return [
         TextContent(
             type="text",
@@ -168,11 +259,37 @@ async def get_specific_attendance(arguments: Dict):
             return [TextContent(type="text", text=f"Error: {str(e)}")]
 
 
+async def diagnose_attendance_records(arguments: Dict):
+    """
+    勤怠データから診断情報だけを抽出して返すツール。
+    """
+    from_day, to_day = get_date_range(arguments["target_month"])
+    print(
+        f"Diagnosing attendance for Staff ID: {type(arguments['staff_id'])} from {from_day} to {to_day}"
+    )
+
+    with Session() as db:
+        try:
+            data = await run_in_threadpool(
+                collect_attendance_data,
+                staff_id=arguments["staff_id"],
+                from_day=from_day,
+                to_day=to_day,
+                db_session=db,
+            )
+            shaped_data = diet_diagnostic_attendance_data(data)
+            return shaped_data
+        except Exception as e:
+            return [TextContent(type="text", text=f"Error: {str(e)}")]
+
+
 # 3. ツールの実行ロジック
 @mcp_server.call_tool()
 async def handle_call_tool(name: str, arguments: Dict):
     if name == "get_specific_attendance":
         return await get_specific_attendance(arguments)
+    if name == "diagnose_attendance_records":
+        return await diagnose_attendance_records(arguments)
 
     raise ValueError(f"Tool not found: {name}")
 
@@ -205,15 +322,19 @@ async def handle_get_prompt(name: str, arguments: dict):
                         type="text",
                         text=(
                             "提示するデータは新システムの集計に用いるための計算過程です。ツール説明(description)をよく読んでください。\n"
-                            "【判定基準】に照らし、勤怠データの不自然な箇所や矛盾点を特定してください。\n"
+                            "【重要】JSONスキーマのキー名('records'キーのリスト内も含む)は、システム管理者としての内部用語であり、回答での使用は禁止します。回答の際は、必ずこれらを日本語に置き換えてください。\n"
+                            "特に、会社特有の用語として以下を徹底してください：\n"
+                            "- total_work_time → '実働時間'\n"
+                            "- actual_site_time → 'リアル実働時間'\n"
+                            "- timeoff_pre_reflected → '時間休を事前に反映した打刻'\n\n"
                             "■分析の視点:\n"
-                            "1. 残業申請(overtime_request)の有無と、実働時間(total_work_time)・契約時間(contract_work_time)の計算関係は仕様通りか？\n"
-                            "2. リアル実働時間(actual_site_time)が、有休等の届出(notification_am / notification_pm)による計算が反映されているか？\n\n"
+                            "1. time_off_input_pattern と total_work_time_calc_mode を参照し、「時間休入力パターン」と「計算方法の切り替え」があれば必ず触れてください。\n"
+                            "2. 残業申請(overtime_request)の有無と、実働時間(total_work_time)・契約時間(contract_work_time)の計算関係は仕様通りか？\n"
+                            "3. リアル実働時間(actual_site_time)が、有休等の届出(notification_am / notification_pm)による計算が反映されているか？\n\n"
                             "■回答における規則:\n"
-                            "total_work_time が、退勤(out) - 出勤(in) - 通常の休憩時間(normal_rest_time)で算出されていると判断した場合は、可能な限りその理由を加えてください。\n"
-                            "【重要】JSONスキーマのキー名('records'キーのリスト内も含む)は、システム管理者としての用語であり使用は禁止とします。回答の際は、これらを必ず日本語に置き換え、"
-                            "また、会社特有の用語として、total_work_time → '実働時間'、actual_site_time → 'リアル実働時間'と置き換えてください。\n"
-                            "問題のない箇所は、なるべく省き、問題のある日付とその理由を簡潔に列挙してください。\n"
+                            "- 問題のない箇所はなるべく省き、不自然な箇所や矛盾点がある日付とその理由を簡潔に列挙してください。\n"
+                            "- 実働時間が「退勤時間 - 出勤時間 - 通常の休憩時間」で算出されている（打刻ベース）と判断した場合は、可能な限りその理由を加えてください。\n"
+                            "【判定基準】に照らし、勤怠データの不自然な箇所や矛盾点を特定してください。\n"
                             "システム上における(提供データへの)、修正提案は結構です。\n\n"
                             "■回答の構成例:\n"
                             "〇〇日: 実働時間が契約労働時間未満ですが、時間休分があらかじめ出退勤に反映されていると思われます。よって「退勤時間 - 出勤時間 - 通常の休憩時間」で計算されています。\n"
