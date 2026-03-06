@@ -123,7 +123,6 @@ ATTENDANCE_KEY_MAP = {
     # "契約労働時間": "contract_work_time",
     # "契約有休時間": "contract_holiday_time",
     "通常休憩時間": "normal_rest_time",
-    # "時間休フラグ": "time_off_hour_flag",
     "実働時間": "total_work_time",
     "リアル実働時間": "actual_site_time",
     "時間外": "overtime",
@@ -143,8 +142,8 @@ def diet_collect_attendance_data(
     """
     元の巨大な辞書データから、必要なキーだけを短縮して抽出するユーティリティ。
     """
-    lightweight_dict = {}
-    shortened_meta_record = {}
+    lightweight_dict: Dict[Any, Any] = {}
+    shortened_meta_record: Dict[Any, Any] = {}
     for key, value in attendance_data.items():
         if isinstance(key, str) and key in FIXED_KEY_MAP:
             # for full_key, short_key in FIXED_KEY_MAP.items():
@@ -185,8 +184,8 @@ def diet_diagnostic_attendance_data(
     """
     診断向けに最小限のキーだけを抽出したJSONを返す。
     """
-    lightweight_dict: Dict[str, Any] = {}
-    shortened_meta_record: Dict[str, Any] = {}
+    lightweight_dict: Dict[Any, Any] = {}
+    shortened_meta_record: Dict[Any, Any] = {}
     for key, value in attendance_data.items():
         if isinstance(key, str) and key in FIXED_KEY_MAP:
             short_key = FIXED_KEY_MAP[key]
