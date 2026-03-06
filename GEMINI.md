@@ -38,7 +38,8 @@ This will build the Docker image and start the application and any services it d
 - Tests can be run using `pytest`. From the project root, execute:
 
 ```
-PYTHONPATH=. pytest
+source .venv/bin/activate
+pytest test/test_...
 ```
 
 This file was created by a Gemini agent.

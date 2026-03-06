@@ -24,7 +24,7 @@ def test_collect_attendance_data():
         from_day="2026-01-01",
         to_day="2026-01-31",
     )
-    # print(attendance_data)
+    print(attendance_data)
 
     from app.server.mcp_tools_call import diet_collect_attendance_data
 
@@ -48,12 +48,12 @@ def test_collect_attendance_data():
             "時間外",
         ],
     ]
-    print(extracted_df)
+    # print(extracted_df)
 
     diagnosis_df = conv_df.loc[
         :, ["日付", "実働時間算出モード", "時間休入力パターン", "診断フラグ"]
     ]
-    print(diagnosis_df)
+    # print(diagnosis_df)
 
 
 @pytest.mark.skip

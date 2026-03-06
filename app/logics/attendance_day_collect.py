@@ -1,5 +1,5 @@
 import math
-from typing import Dict, Any
+from typing import Dict, Any, List
 import re
 from datetime import timedelta
 
@@ -89,7 +89,7 @@ def format_rt(seconds: float) -> str:
 
 def collect_attendance_data(
     staff_id: int, from_day: str, to_day: str, db_session: Session = session
-) -> Dict[Dict[str, int | str | float], Dict[int, Dict[str, Any]]]:
+) -> Dict[str | int, int | str | Dict[int, Dict[str, str | List[str] | None]]]:
     """
     Collects attendance data from various sources and compiles it into a unified format.
     """
@@ -300,15 +300,25 @@ def collect_attendance_data(
             )
 
         if oncall_zero_pattern == "oncall_waited":
-            diagnosis_list.append("オンコールがあり、出勤時刻が'00:00'ですが、出勤扱いです。")
+            diagnosis_list.append(
+                "オンコールがあり、出勤時刻が'00:00'ですが、出勤扱いです。"
+            )
         elif "OVERTIME_NEGATIVE" in diagnostic_flags:
-            diagnosis_list.append("残業申請ありですが時間外がマイナスです。届出漏れなどの可能性があります。")
+            diagnosis_list.append(
+                "残業申請ありですが時間外がマイナスです。届出漏れなどの可能性があります。"
+            )
         elif "IRREGULAR_NO_NOTIFICATION" in diagnostic_flags:
-            diagnosis_list.append("有休等の届出なしで実働時間が契約労働時間未満です。打刻ベース算出のイレギュラーの可能性があります。")
+            diagnosis_list.append(
+                "有休等の届出なしで実働時間が契約労働時間未満です。打刻ベース算出のイレギュラーの可能性があります。"
+            )
         elif "BASIC_IRREGULAR" in diagnostic_flags:
-            diagnosis_list.append("実働時間が契約労働時間未満です。打刻ベース算出のイレギュラーの可能性があります。")
-        
-        attendance_data[work_day]["診断"] = " ".join(diagnosis_list) if diagnosis_list else None
+            diagnosis_list.append(
+                "実働時間が契約労働時間未満です。打刻ベース算出のイレギュラーの可能性があります。"
+            )
+
+        attendance_data[work_day]["診断"] = (
+            " ".join(diagnosis_list) if diagnosis_list else None
+        )
 
         # 備考
         attendance_data[work_day]["備考"] = (
